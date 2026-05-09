@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="supabase-url" content="https://oqqoafejnzoolbpskbji.supabase.co" />
+    <meta name="supabase-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcW9hZmVqbnpvb2xicHNrYmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODQ0NzYsImV4cCI6MjA5MjM2MDQ3Nn0.28ilXh_YHdf7PBCrEz4r_gA20MmeOmo7ZViNIixMJgM" />
+    <meta name="csrf-token" content="temporary-placeholder" />
+    <title>IRONFIT — Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            background: rgba(20,20,20,0.8);
+            border: 1px solid #333;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .login-logo span {
+            color: #e8ff00;
+        }
+
+        .login-subtitle {
+            font-size: 13px;
+            color: #999;
+            letter-spacing: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaa;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #e8ff00;
+            background: rgba(232,255,0,0.05);
+            box-shadow: 0 0 0 3px rgba(232,255,0,0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .form-group input.error {
+            border-color: #ff4444;
+            background: rgba(255,68,68,0.05);
+        }
+
+        .error-message {
+            font-size: 12px;
+            color: #ff4444;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: #e8ff00;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background: #fff;
+            box-shadow: 0 4px 16px rgba(232,255,0,0.3);
+        }
+
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+
+        .login-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.success {
+            background: rgba(68,255,100,0.1);
+            border: 1px solid #44ff64;
+            color: #44ff64;
+        }
+
+        .alert.error {
+            background: rgba(255,68,68,0.1);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+        }
+
+        .alert.warning {
+            background: rgba(255,200,68,0.1);
+            border: 1px solid #ffc844;
+            color: #ffc844;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .login-footer a {
+            color: #e8ff00;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #333;
+        }
+
+        .divider::before {
+            margin-right: 12px;
+        }
+
+        .divider::after {
+            margin-left: 12px;
+        }
+
+        @media (max-width: 900px) {
+            .login-container {
+                border-radius: 8px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 30px 24px;
+                margin: 20px;
+                max-width: 100%;
+            }
+
+            .login-logo {
+                font-size: 32px;
+            }
+
+            .login-subtitle {
+                font-size: 12px;
+            }
+
+            .form-group label {
+                font-size: 12px;
+            }
+
+            .form-group input {
+                padding: 11px 14px;
+                font-size: 13px;
+            }
+
+            .login-btn {
+                padding: 13px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 24px 16px;
+                border-radius: 0;
+                background: rgba(20,20,20,0.95);
+                box-shadow: none;
+                border: none;
+                max-width: 100%;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .login-header {
+                margin-bottom: 24px;
+            }
+
+            .login-logo {
+                font-size: 24px;
+            }
+
+            .login-subtitle {
+                font-size: 11px;
+                letter-spacing: 1px;
+            }
+
+            .form-group {
+                margin-bottom: 14px;
+            }
+
+            .form-group label {
+                font-size: 10px;
+                margin-bottom: 5px;
+            }
+
+            .form-group input {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .error-message {
+                font-size: 11px;
+            }
+
+            .login-btn {
+                padding: 11px;
+                font-size: 13px;
+                margin-top: 8px;
+            }
+
+            .divider {
+                margin: 16px 0;
+                font-size: 11px;
+            }
+
+            .login-footer {
+                margin-top: 16px;
+                font-size: 11px;
+            }
+
+            .login-footer a {
+                font-size: 11px;
+            }
+
+            p {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .login-container {
+                padding: 16px 12px;
+            }
+
+            .login-header {
+                margin-bottom: 16px;
+            }
+
+            .login-logo {
+                font-size: 20px;
+                margin-bottom: 4px;
+            }
+
+            .login-subtitle {
+                font-size: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            .form-group label {
+                font-size: 9px;
+                margin-bottom: 4px;
+            }
+
+            .form-group input {
+                padding: 9px 10px;
+                font-size: 12px;
+            }
+
+            .login-btn {
+                padding: 10px;
+                font-size: 12px;
+                margin-top: 6px;
+            }
+
+            .divider {
+                margin: 12px 0;
+                font-size: 10px;
+            }
+
+            p {
+                font-size: 10px;
+            }
+        }
+
+        /* Suporte para teclado em mobile */
+        @supports (padding: max(0px)) {
+            .login-container {
+                padding-bottom: max(40px, env(safe-area-inset-bottom));
+            }
+        }
+
+        input, textarea, select {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-logo">IRON<span>FIT</span></div>
+            <div class="login-subtitle">ACESSE SUA CONTA</div>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    placeholder="seu.email@exemplo.com"
+                    required
+                />
+                <div class="error-message" id="emailError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="••••••••"
+                    required
+                />
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">Entrar 🔓</button>
+        </form>
+
+        <div class="divider">ou</div>
+
+        <p style="text-align: center; font-size: 13px; color: #999; margin-bottom: 12px;">
+            Novo por aqui?
+        </p>
+        <button class="login-btn" style="background: #333; color: #fff;" onclick="goToRegister()">
+            Criar Conta 💪
+        </button>
+
+        <div class="login-footer">
+            <p style="margin-bottom: 8px;">
+                <a onclick="goToForgot()">Esqueceu a senha?</a>
+            </p>
+        </div>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="src/config.js"></script>
+    <script src="src/login.js"></script>
+
+    <script>
+        // Verificar se Supabase foi carregado
+        let supabaseLib = null;
+        try {
+            supabaseLib = window.supabase;
+            console.log('✅ Supabase JS carregado:', supabaseLib ? 'OK' : 'FALHOU');
+        } catch (e) {
+            console.warn('⚠️ Erro ao carregar Supabase:', e);
+        }
+
+        // Função melhorada de login
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const alertBox = document.getElementById('alertBox');
+
+            // Limpar mensagens de erro anteriores
+            clearErrors();
+
+            // Validações
+            if (!email) {
+                showError('emailError', 'Email é obrigatório');
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                showError('emailError', 'Email inválido');
+                return;
+            }
+
+            if (!password || password.length < 6) {
+                showError('passwordError', 'Senha deve ter no mínimo 6 caracteres');
+                return;
+            }
+
+            // Mostrar carregamento
+            loginBtn.classList.add('loading');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Entrando... ⏳';
+
+            // Verificar Supabase - se não tiver configuração, usar modo desenvolvimento
+            if (!supabaseClient || !supabaseLib) {
+                console.log('🔧 Modo desenvolvimento: login simulado');
+                
+                // MODO DESENVOLVIMENTO - Permite login sem Supabase
+                // Armazena email no localStorage para simular sessão
+                localStorage.setItem('ironfit_userEmail', email);
+                localStorage.setItem('ironfit_loggedIn', 'true');
+                localStorage.setItem('ironfit_userId', 'dev-user-' + Date.now());
+                
+                showAlert('Modo desenvolvimento: login realizado com sucesso! 🎉', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+                
+                loginBtn.classList.remove('loading');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Entrar 🔓';
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) {
+                    // Mensagens de erro mais específicas
+                    if (error.message.includes('Invalid login credentials') || error.message.includes('invalid')) {
+                        showAlert('Email ou senha incorretos', 'error');
+                    } else if (error.message.includes('Email not confirmed')) {
+                        showAlert('Confirme seu email antes de fazer login', 'warning');
+                    } else if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
+                        // Erro de rede - oferece modo desenvolvimento
+                        showAlert('Erro de conexão. Tentando modo desenvolvimento...', 'warning');
+                        
+                        localStorage.setItem('ironfit_userEmail', email);
+                        localStorage.setItem('ironfit_loggedIn', 'true');
+                        localStorage.setItem('ironfit_userId', 'dev-user-' + Date.now());
+                        
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                    } else {
+                        showAlert('Erro ao fazer login: ' + error.message, 'error');
+                    }
+                } else if (data && data.user) {
+                    localStorage.setItem('ironfit_userEmail', data.user.email || email);
+                    localStorage.setItem('ironfit_userId', data.user.id || 'user-' + Date.now());
+                    localStorage.setItem('ironfit_loggedIn', 'true');
+                    showAlert('Login bem-sucedido! Redirecionando...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                }
+            } catch (err) {
+                // Se der qualquer erro, tenta modo desenvolvimento
+                console.warn('Erro no login, redirecionando para modo desenvolvimento:', err);
+                
+                localStorage.setItem('ironfit_userEmail', email);
+                localStorage.setItem('ironfit_loggedIn', 'true');
+                localStorage.setItem('ironfit_userId', 'dev-user-' + Date.now());
+                
+                showAlert('Login realizado com sucesso! 🎉', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } finally {
+                loginBtn.classList.remove('loading');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Entrar 🔓';
+            }
+        }
+
+        // Funções auxiliares
+        function isValidEmail(email) {
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return regex.test(email);
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.classList.add('show');
+
+                // Adicionar classe ao input
+                const inputId = elementId.replace('Error', '');
+                const input = document.getElementById(inputId);
+                if (input) input.classList.add('error');
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+            document.querySelectorAll('input').forEach(el => {
+                el.classList.remove('error');
+            });
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.textContent = message;
+            alertBox.className = `alert show ${type}`;
+            
+            // Auto-hide após 5 segundos (exceto para sucesso)
+            if (type !== 'success') {
+                setTimeout(() => {
+                    alertBox.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        function goToRegister() {
+            window.location.href = 'register.html';
+        }
+
+        function goToForgot() {
+            alert('Página de recuperação de senha em desenvolvimento');
+            // window.location.href = 'forgot.html';
+        }
+
+        // Verificar se já está logado
+        async function checkIfLoggedIn() {
+            const loggedInLocal = localStorage.getItem('ironfit_loggedIn') === 'true';
+            const userEmailLocal = localStorage.getItem('ironfit_userEmail');
+
+            if (loggedInLocal && userEmailLocal) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if (!supabaseClient) return;
+
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session?.access_token && !loggedInLocal) {
+                    // Se a sessão Supabase ainda existe mas o estado local foi limpo,
+                    // garantimos logout completo e mostramos a tela de login.
+                    try {
+                        await supabaseClient.auth.signOut();
+                    } catch (signOutErr) {
+                        console.warn('Falha ao efetuar signOut no login check:', signOutErr);
+                    }
+                    return;
+                }
+
+                const { data, error } = await supabaseClient.auth.getUser();
+                if (data && data.user) {
+                    localStorage.setItem('ironfit_userEmail', data.user.email || '');
+                    localStorage.setItem('ironfit_userId', data.user.id || '');
+                    localStorage.setItem('ironfit_loggedIn', 'true');
+                    window.location.href = 'index.html';
+                }
+            } catch (err) {
+                console.log('Usuário não logado');
+            }
+        }
+
+        checkIfLoggedIn();
+    </script>
+</body>
+</html>

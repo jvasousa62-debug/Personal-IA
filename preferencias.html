@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="supabase-url" content="https://oqqoafejnzoolbpskbji.supabase.co" />
+  <meta name="supabase-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcW9hZmVqbnpvb2xicHNrYmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODQ0NzYsImV4cCI6MjA5MjM2MDQ3Nn0.28ilXh_YHdf7PBCrEz4r_gA20MmeOmo7ZViNIixMJgM" />
+  <meta name="csrf-token" content="temporary-placeholder" />
+  <title>IRONFIT — Preferências</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .prefs-page {
+      min-height: 100vh;
+      background: var(--black);
+    }
+    .prefs-header {
+      background: var(--black2);
+      border-bottom: 1px solid var(--black4);
+      padding: 32px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .prefs-header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 2px;
+      color: var(--white);
+    }
+    .prefs-header h1 span {
+      color: var(--accent);
+    }
+    .prefs-sub {
+      font-size: 14px;
+      color: var(--gray3);
+      margin-top: 4px;
+    }
+
+    .prefs-content {
+      padding: 32px 48px;
+      max-width: 900px;
+    }
+
+    .prefs-section {
+      background: var(--black2);
+      border: 1px solid var(--black4);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .prefs-section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--gray3);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--black4);
+    }
+
+    /* AI Style Cards */
+    .ai-style-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .ai-style-card {
+      background: var(--black3);
+      border: 2px solid var(--black5);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .ai-style-card:hover {
+      border-color: var(--gray);
+      transform: translateY(-3px);
+    }
+    .ai-style-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-dim2);
+      box-shadow: 0 0 20px rgba(232,255,0,0.1);
+    }
+    .ai-style-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .ai-style-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+    .ai-style-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 1px;
+      color: var(--white);
+      margin-bottom: 6px;
+    }
+    .ai-style-desc {
+      font-size: 12px;
+      color: var(--gray3);
+      line-height: 1.5;
+    }
+    .ai-style-preview {
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--black4);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--gray4);
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    /* Language & Toggles */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--black5);
+    }
+    .toggle-row:last-child {
+      border-bottom: none;
+    }
+    .toggle-info h4 {
+      font-size: 14px;
+      color: var(--white);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .toggle-info p {
+      font-size: 12px;
+      color: var(--gray3);
+    }
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      background: var(--black5);
+      border-radius: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .toggle-switch.active {
+      background: var(--accent);
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      background: var(--white);
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: all 0.3s;
+    }
+    .toggle-switch.active::after {
+      left: 24px;
+      background: var(--black);
+    }
+
+    /* Select custom */
+    .pref-select {
+      width: 100%;
+      background: var(--black3);
+      border: 1px solid var(--black5);
+      color: var(--white);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: 'Barlow', sans-serif;
+      cursor: pointer;
+      outline: none;
+    }
+    .pref-select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Range slider */
+    .range-group {
+      margin-bottom: 16px;
+    }
+    .range-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--gray3);
+      margin-bottom: 8px;
+    }
+    .range-slider {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--black5);
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 3px solid var(--black);
+    }
+
+    /* Actions */
+    .prefs-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--black4);
+    }
+    .prefs-actions .action-btn {
+      padding: 14px 32px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .prefs-actions .action-btn.primary {
+      background: var(--accent);
+      color: var(--black);
+      border-color: var(--accent);
+    }
+    .prefs-actions .action-btn.primary:hover {
+      background: #fff;
+      box-shadow: 0 4px 20px rgba(232,255,0,0.3);
+    }
+
+    /* Alert */
+    .prefs-alert {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      display: none;
+    }
+    .prefs-alert.show {
+      display: block;
+      animation: msgIn 0.3s ease;
+    }
+    .prefs-alert.success {
+      background: rgba(68,255,100,0.1);
+      border: 1px solid #44ff64;
+      color: #44ff64;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .prefs-header {
+        padding: 24px 20px;
+      }
+      .prefs-header h1 {
+        font-size: 32px;
+      }
+      .prefs-content {
+        padding: 20px;
+      }
+      .ai-style-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .prefs-actions {
+        flex-direction: column;
+      }
+      .prefs-actions .action-btn {
+        width: 100%;
+      }
+    }
+    @media (max-width: 480px) {
+      .ai-style-grid {
+        grid-template-columns: 1fr;
+      }
+      .prefs-section {
+        padding: 20px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-logo">IRON<span>FIT</span></div>
+    <button class="hamburger" onclick="window.location.href='index.html'">&#10005;</button>
+  </header>
+
+  <div class="prefs-page">
+    <div class="prefs-header">
+      <div>
+        <h1>Preferências <span>IA</span></h1>
+        <div class="prefs-sub">Personalize como seu Personal trainer te atende</div>
+      </div>
+    </div>
+
+    <div class="prefs-content">
+      <div id="prefsAlert" class="prefs-alert"></div>
+
+      <!-- ESTILO DO PERSONAL IA -->
+      <div class="prefs-section">
+        <div class="prefs-section-title">🧠 Estilo do Personal IA</div>
+        <div class="ai-style-grid" id="aiStyleGrid">
+          <div class="ai-style-card selected" data-style="motivador" onclick="selectStyle(this)">
+            <div class="ai-style-icon">🔥</div>
+            <div class="ai-style-name">MOTIVADOR</div>
+            <div class="ai-style-desc">Energia máxima, frases de impacto, celebra cada conquista</div>
+            <div class="ai-style-preview">"BORA, GUERREIRO! Você é CAPAZ! 💪 CADA REP É UMA VITÓRIA!"</div>
+          </div>
+          <div class="ai-style-card" data-style="bruto" onclick="selectStyle(this)">
+            <div class="ai-style-icon">💀</div>
+            <div class="ai-style-name">BRUTO</div>
+            <div class="ai-style-desc">Sem rodeios, direto e cru. Zero desculpas aceitas</div>
+            <div class="ai-style-preview">"Cala a boca e levanta esse peso. Ninguém mandou você parar."</div>
+          </div>
+          <div class="ai-style-card" data-style="tecnico" onclick="selectStyle(this)">
+            <div class="ai-style-icon">📐</div>
+            <div class="ai-style-name">TÉCNICO</div>
+            <div class="ai-style-desc">Preciso científico, explica biomecânica e fisiologia</div>
+            <div class="ai-style-preview">"O agachamento ativa o recrutamento de fibras tipo II quando..."</div>
+          </div>
+          <div class="ai-style-card" data-style="amigavel" onclick="selectStyle(this)">
+            <div class="ai-style-icon">🤝</div>
+            <div class="ai-style-name">AMIGÁVEL</div>
+            <div class="ai-style-desc">Gentil, paciente, encoraja sem pressionar. Como um amigo</div>
+            <div class="ai-style-preview">"Você tá indo super bem! Vamos juntos nessa, no seu ritmo 🌟"</div>
+          </div>
+          <div class="ai-style-card" data-style="sarcastico" onclick="selectStyle(this)">
+            <div class="ai-style-icon">😏</div>
+            <div class="ai-style-name">SARCÁSTICO</div>
+            <div class="ai-style-desc">Ironia e humor afiado. Motiva pelo reverse psychology</div>
+            <div class="ai-style-preview">"Ah, cansou? Que pena. O sofá tá te esperando, campeão."</div>
+          </div>
+          <div class="ai-style-card" data-style="zen" onclick="selectStyle(this)">
+            <div class="ai-style-icon">🧘</div>
+            <div class="ai-style-name">ZEN</div>
+            <div class="ai-style-desc">Calmo, mindfulness, conecta corpo e mente</div>
+            <div class="ai-style-preview">"Sinta o movimento. Respire. Seu corpo é seu templo. 🍃"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEMA DO APP -->
+      <div class="prefs-section">
+        <div class="prefs-section-title">🎨 Tema do App</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>Modo Claro</h4>
+            <p>Use um visual mais clean com fundo branco ou cinza claro.</p>
+          </div>
+          <div class="toggle-switch" id="toggleTheme" onclick="toggleTheme()"></div>
+        </div>
+      </div>
+
+      <!-- INTELIGÊNCIA DA IA -->
+      <div class="prefs-section">
+        <div class="prefs-section-title">⚡ Inteligência & Compreensão</div>
+
+        <div class="range-group">
+          <div class="range-label">
+            <span>Detalhamento das Respostas</span>
+            <span id="detailValue">Médio</span>
+          </div>
+          <input type="range" class="range-slider" id="detailLevel" min="1" max="3" value="2" oninput="updateDetailLabel(this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray3);margin-top:4px;">
+            <span>Curto & Direto</span>
+            <span>Balanceado</span>
+            <span>Super Detalhado</span>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>🎯 Entender Erros de Digitação</h4>
+            <p>A IA corrige e entende mesmo com typos e abreviações</p>
+          </div>
+          <div class="toggle-switch active" id="toggleTypos" onclick="toggleSwitch(this)"></div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>🧠 Lembrar Contexto da Conversa</h4>
+            <p>A IA lembra o que você disse antes nesta sessão</p>
+          </div>
+          <div class="toggle-switch active" id="toggleContext" onclick="toggleSwitch(this)"></div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>🌍 Detectar Idioma Automaticamente</h4>
+            <p>Responde no idioma que você escrever (PT, EN, ES)</p>
+          </div>
+          <div class="toggle-switch" id="toggleAutoLang" onclick="toggleSwitch(this)"></div>
+        </div>
+      </div>
+
+      <!-- LINGUAGEM -->
+      <div class="prefs-section">
+        <div class="prefs-section-title">🗣️ Linguagem</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>Linguagem Simples nos Exercícios</h4>
+            <p>Substitui termos técnicos difíceis por explicações do tipo "como se fosse com um amigo"</p>
+          </div>
+          <div class="toggle-switch" id="toggleSimpleLang" onclick="toggleSwitch(this)"></div>
+        </div>
+      </div>
+
+      <!-- NOTIFICAÇÕES -->
+      <div class="prefs-section">
+        <div class="prefs-section-title">🔔 Notificações</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>Lembretes de Treino</h4>
+            <p>Notificações nos dias de treino configurados</p>
+          </div>
+          <div class="toggle-switch active" id="toggleWorkoutRem" onclick="toggleSwitch(this)"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>Novidades e Dicas</h4>
+            <p>Receba dicas semanais e novidades do app</p>
+          </div>
+          <div class="toggle-switch active" id="toggleTips" onclick="toggleSwitch(this)"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>Som ao Receber Mensagem</h4>
+            <p>Efeito sonoro quando o Personal IA responder</p>
+          </div>
+          <div class="toggle-switch" id="toggleSound" onclick="toggleSwitch(this)"></div>
+        </div>
+      </div>
+
+      <!-- AÇÕES -->
+      <div class="prefs-actions">
+        <button class="action-btn primary" onclick="savePreferences()">💾 Salvar Preferências</button>
+        <button class="action-btn" onclick="resetPreferences()">🔄 Restaurar Padrão</button>
+        <button class="action-btn" onclick="window.location.href='index.html'">← Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="src/config.js"></script>
+  <script src="src/login.js"></script>
+  <script>
+    let currentStyle = 'motivador';
+
+    // Aguardar cliente Supabase ser inicializado (compartilhado com index.html)
+    function waitForSupabase(timeoutMs = 3000) {
+      return new Promise((resolve) => {
+        const start = Date.now();
+        const check = () => {
+          if (window.supabaseClient || Date.now() - start > timeoutMs) {
+            resolve();
+          } else {
+            setTimeout(check, 50);
+          }
+        };
+        check();
+      });
+    }
+
+    // Verificar autenticação
+    async function checkAuthentication() {
+      if (!window.supabaseClient?.auth) {
+        console.log('❌ Supabase não disponível');
+        return true;
+      }
+      
+      try {
+        const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+        if (error || !user) {
+          console.log('❌ Usuário não logado, redirecionando');
+          return true;
+        }
+        return true;
+      } catch (e) {
+        console.warn('Erro ao verificar autenticacao. Preferencias em modo local:', e);
+        return true;
+      }
+    }
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', async () => {
+      await waitForSupabase();
+      
+      // Verificar se está logado
+      const isAuth = await checkAuthentication();
+      if (!isAuth) return;
+      
+      await loadSavedPreferences();
+    });
+
+    function selectStyle(card) {
+      document.querySelectorAll('.ai-style-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      currentStyle = card.dataset.style;
+    }
+
+    function toggleSwitch(el) {
+      el.classList.toggle('active');
+    }
+
+    function toggleTheme() {
+      const themeToggle = document.getElementById('toggleTheme');
+      const isLight = themeToggle.classList.toggle('active');
+      applyTheme(isLight ? 'light' : 'dark');
+      localStorage.setItem('ironfit_theme', isLight ? 'light' : 'dark');
+    }
+
+    function applyTheme(theme) {
+      if (theme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+    }
+
+    function updateDetailLabel(val) {
+      const labels = { 1: 'Curto & Direto', 2: 'Balanceado', 3: 'Super Detalhado' };
+      document.getElementById('detailValue').textContent = labels[val] || 'Médio';
+    }
+
+    async function loadSavedPreferences() {
+      console.log('📦 Carregando preferências salvas...');
+      
+      // Carregar do localStorage
+      const saved = localStorage.getItem('ironfit_prefs');
+      if (saved) {
+        try {
+          const prefs = JSON.parse(saved);
+          console.log('✅ Preferências carregadas do localStorage');
+
+          // Estilo
+          if (prefs.aiStyle) {
+            currentStyle = prefs.aiStyle;
+            document.querySelectorAll('.ai-style-card').forEach(c => {
+              c.classList.toggle('selected', c.dataset.style === prefs.aiStyle);
+            });
+          }
+
+          if (prefs.theme) {
+            applyTheme(prefs.theme);
+            const themeToggle = document.getElementById('toggleTheme');
+            if (themeToggle) {
+              themeToggle.classList.toggle('active', prefs.theme === 'light');
+            }
+          } else {
+            const storedTheme = localStorage.getItem('ironfit_theme') || 'dark';
+            applyTheme(storedTheme);
+            const themeToggle = document.getElementById('toggleTheme');
+            if (themeToggle) {
+              themeToggle.classList.toggle('active', storedTheme === 'light');
+            }
+          }
+
+          // Detalhamento
+          if (prefs.detailLevel) {
+            document.getElementById('detailLevel').value = prefs.detailLevel;
+            updateDetailLabel(prefs.detailLevel);
+          }
+
+          // Toggles
+          const toggles = {
+            toggleTypos: 'fixTypos',
+            toggleContext: 'useContext',
+            toggleAutoLang: 'autoLang',
+            toggleSimpleLang: 'simpleLanguage',
+            toggleWorkoutRem: 'workoutReminders',
+            toggleTips: 'weeklyTips',
+            toggleSound: 'soundEffects'
+          };
+
+          for (const [id, key] of Object.entries(toggles)) {
+            const el = document.getElementById(id);
+            if (el && prefs[key] !== undefined) {
+              if (!prefs[key]) el.classList.remove('active');
+              else el.classList.add('active');
+            }
+          }
+        } catch (e) {
+          console.warn('Preferencias locais corrompidas. Usando padrao:', e);
+        }
+      } else {
+        console.log('ℹ️ Nenhuma preferência salva ainda');
+      }
+    }
+
+    async function savePreferences() {
+      console.log('💾 Salvando preferências...');
+      
+      const prefs = {
+        aiStyle: currentStyle,
+        detailLevel: parseInt(document.getElementById('detailLevel').value),
+        fixTypos: document.getElementById('toggleTypos').classList.contains('active'),
+        useContext: document.getElementById('toggleContext').classList.contains('active'),
+        autoLang: document.getElementById('toggleAutoLang').classList.contains('active'),
+        simpleLanguage: document.getElementById('toggleSimpleLang').classList.contains('active'),
+        workoutReminders: document.getElementById('toggleWorkoutRem').classList.contains('active'),
+        weeklyTips: document.getElementById('toggleTips').classList.contains('active'),
+        soundEffects: document.getElementById('toggleSound').classList.contains('active'),
+          theme: document.body.classList.contains('light-theme') ? 'light' : 'dark',
+          updatedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('ironfit_theme', prefs.theme);
+      localStorage.setItem('ironfit_prefs', JSON.stringify(prefs));
+      console.log('✅ Preferências salvas no localStorage');
+
+      // Salvar também no user_preferences se possível
+      if (typeof saveUserPreferences === 'function') {
+        try {
+          await saveUserPreferences({ ...prefs, ai_personality: currentStyle });
+          console.log('✅ Preferências salvas no Supabase');
+        } catch (e) {
+          console.warn('⚠️ Erro ao salvar no Supabase:', e);
+        }
+      }
+
+      showAlert('✅ Preferências salvas! O Personal IA agora vai te atender do seu jeito.', 'success');
+
+      // Disparar evento para outras páginas
+      window.dispatchEvent(new StorageEvent('storage', { key: 'ironfit_prefs' }));
+    }
+
+    function resetPreferences() {
+      if (!confirm('Restaurar todas as preferências para o padrão?')) return;
+      localStorage.removeItem('ironfit_prefs');
+      location.reload();
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('prefsAlert');
+      alert.textContent = message;
+      alert.className = `prefs-alert show ${type}`;
+      setTimeout(() => alert.classList.remove('show'), 5000);
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,128 @@
+# ===========================
+# AMBIENTE & SECRETOS
+# ===========================
+.env
+.env.local
+.env.*.local
+.env.production.local
+.env.test.local
+.secrets/
+*.key
+*.pem
+.credentials
+
+# ===========================
+# SUPABASE LOCAL
+# ===========================
+.supabase/
+supabase/.branches/
+supabase/.temp/
+
+# ===========================
+# NODE / NPM
+# ===========================
+node_modules/
+package-lock.json
+npm-debug.log
+yarn.lock
+.npm
+.yarn
+
+# ===========================
+# IDE / EDITOR
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# ===========================
+# BUILD / DIST
+# ===========================
+dist/
+build/
+*.min.js
+*.min.css
+
+# ===========================
+# LOGS
+# ===========================
+logs/
+*.log
+
+
+# ===========================
+# EDITOR & IDE
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.env.local.php
+
+# ===========================
+# DEPLOYMENT
+# ===========================
+dist/
+build/
+out/
+.next
+.nuxt
+
+# ===========================
+# TESTING
+# ===========================
+coverage/
+.nyc_output/
+.test-results/
+
+# ===========================
+# OS ESPECÍFICOS
+# ===========================
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ===========================
+# LOGS
+# ===========================
+*.log
+logs/
+*.log.*
+
+# ===========================
+# CACHE
+# ===========================
+.cache/
+.parcel-cache/
+.vite/
+
+# ===========================
+# ARQUIVOS SENSÍVEIS
+# ===========================
+# Não commitar arquivos com dados sensíveis
+config.private.js
+secrets.json
+private/
+.secrets
+
+# ===========================
+# ARQUIVOS TEMPORÁRIOS
+# ===========================
+tmp/
+temp/
+*.tmp
+
+# ===========================
+# COMPILADOS
+# ===========================
+*.min.js
+*.min.css
+*.map

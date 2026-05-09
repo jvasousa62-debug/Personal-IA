@@ -1,0 +1,39 @@
+{
+  "name": "ironfit",
+  "version": "1.0.0",
+  "description": "IRONFIT - Personal IA para Academias",
+  "type": "module",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 8080 -c-1",
+    "serve": "npx serve .",
+    "preview": "npx http-server -p 8080 -c-1 -o index.html",
+    "build": "echo 'IRONFIT is a static site. No build step needed.' && echo 'Deploy the entire directory to production.'",
+    "lint": "eslint src/ --ext .js",
+    "test": "node --test tests/**/*.test.js",
+    "supabase:local": "supabase start",
+    "supabase:migrate": "supabase migration up",
+    "supabase:deploy": "supabase deploy"
+  },
+  "keywords": [
+    "academia",
+    "fitness",
+    "AI",
+    "personal-trainer",
+    "supabase"
+  ],
+  "author": "IronFit Team",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.4"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "serve": "^14.1.2",
+    "eslint": "^8.50.0",
+    "supabase": "^1.83.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

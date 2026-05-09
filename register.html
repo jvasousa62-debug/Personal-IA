@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="supabase-url" content="https://oqqoafejnzoolbpskbji.supabase.co" />
+    <meta name="supabase-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcW9hZmVqbnpvb2xicHNrYmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODQ0NzYsImV4cCI6MjA5MjM2MDQ3Nn0.28ilXh_YHdf7PBCrEz4r_gA20MmeOmo7ZViNIixMJgM" />
+    <meta name="csrf-token" content="temporary-placeholder" />
+    <title>IRONFIT — Criar Conta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Barlow', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            background: rgba(20,20,20,0.8);
+            border: 1px solid #333;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .register-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .register-logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .register-logo span {
+            color: #e8ff00;
+        }
+
+        .register-subtitle {
+            font-size: 13px;
+            color: #999;
+            letter-spacing: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaa;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #e8ff00;
+            background: rgba(232,255,0,0.05);
+            box-shadow: 0 0 0 3px rgba(232,255,0,0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .form-group input.error {
+            border-color: #ff4444;
+            background: rgba(255,68,68,0.05);
+        }
+
+        .error-message {
+            font-size: 11px;
+            color: #ff4444;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .password-strength {
+            font-size: 11px;
+            margin-top: 4px;
+            display: none;
+            color: #aaa;
+        }
+
+        .strength-bar {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .strength-indicator {
+            height: 100%;
+            width: 0%;
+            background: #ff4444;
+            transition: all 0.3s;
+        }
+
+        .strength-indicator.weak {
+            background: #ff4444;
+            width: 33%;
+        }
+
+        .strength-indicator.medium {
+            background: #ffc844;
+            width: 66%;
+        }
+
+        .strength-indicator.strong {
+            background: #44ff64;
+            width: 100%;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 13px;
+            background: #e8ff00;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+
+        .register-btn:hover {
+            background: #fff;
+            box-shadow: 0 4px 16px rgba(232,255,0,0.3);
+        }
+
+        .register-btn:active {
+            transform: scale(0.98);
+        }
+
+        .register-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 12px 14px;
+            border-radius: 6px;
+            margin-bottom: 18px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.success {
+            background: rgba(68,255,100,0.1);
+            border: 1px solid #44ff64;
+            color: #44ff64;
+        }
+
+        .alert.error {
+            background: rgba(255,68,68,0.1);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+        }
+
+        .alert.warning {
+            background: rgba(255,200,68,0.1);
+            border: 1px solid #ffc844;
+            color: #ffc844;
+        }
+
+        .register-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .register-footer a {
+            color: #e8ff00;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .register-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .terms-group {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 11px;
+            color: #999;
+            line-height: 1.4;
+        }
+
+        .terms-group input {
+            margin-top: 3px;
+            cursor: pointer;
+        }
+
+        .terms-group a {
+            color: #e8ff00;
+            text-decoration: none;
+        }
+
+        /* Modal de confirmação de email */
+        .email-confirmation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .email-confirmation-modal.show {
+            display: flex;
+        }
+
+        .confirmation-content {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(20,20,20,0.95);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .confirmation-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .confirmation-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #e8ff00;
+        }
+
+        .confirmation-text {
+            font-size: 14px;
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .confirmation-steps {
+            text-align: left;
+            background: rgba(232,255,0,0.05);
+            border: 1px solid rgba(232,255,0,0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            font-size: 13px;
+        }
+
+        .confirmation-steps ol {
+            margin-left: 20px;
+            color: #ddd;
+        }
+
+        .confirmation-steps li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .confirmation-steps strong {
+            color: #e8ff00;
+        }
+
+        .confirmation-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .confirmation-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .confirmation-actions .btn-primary {
+            background: #e8ff00;
+            color: #000;
+        }
+
+        .confirmation-actions .btn-primary:hover {
+            background: #fff;
+            box-shadow: 0 4px 16px rgba(232,255,0,0.3);
+        }
+
+        .confirmation-actions .btn-secondary {
+            background: #333;
+            color: #e8ff00;
+            border: 1px solid #e8ff00;
+        }
+
+        .confirmation-actions .btn-secondary:hover {
+            background: #444;
+        }
+
+        .confirmation-email {
+            background: rgba(232,255,0,0.05);
+            border: 1px solid #e8ff00;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #e8ff00;
+            font-size: 13px;
+            word-break: break-all;
+            margin-bottom: 16px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 900px) {
+            .register-container {
+                border-radius: 8px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .register-container {
+                padding: 30px 24px;
+                margin: 20px;
+            }
+
+            .register-logo {
+                font-size: 32px;
+            }
+
+            .register-subtitle {
+                font-size: 12px;
+            }
+
+            .form-group label {
+                font-size: 11px;
+            }
+
+            .register-btn {
+                padding: 12px;
+                font-size: 13px;
+            }
+
+            .confirmation-content {
+                padding: 30px 24px;
+            }
+
+            .confirmation-title {
+                font-size: 20px;
+            }
+
+            .confirmation-text {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 24px 16px;
+                border-radius: 0;
+                background: rgba(20,20,20,0.95);
+                box-shadow: none;
+                border: none;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .register-header {
+                margin-bottom: 24px;
+            }
+
+            .register-logo {
+                font-size: 24px;
+            }
+
+            .register-subtitle {
+                font-size: 11px;
+                letter-spacing: 1px;
+            }
+
+            .form-group {
+                margin-bottom: 14px;
+            }
+
+            .form-group label {
+                font-size: 10px;
+                margin-bottom: 5px;
+            }
+
+            .form-group input {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .password-strength {
+                font-size: 10px;
+            }
+
+            .strength-bar {
+                margin-top: 3px;
+                height: 3px;
+            }
+
+            .terms-group {
+                font-size: 10px;
+                margin-bottom: 12px;
+            }
+
+            .register-btn {
+                padding: 11px;
+                font-size: 13px;
+                margin-top: 6px;
+            }
+
+            .register-footer {
+                font-size: 11px;
+                margin-top: 16px;
+            }
+
+            .confirmation-content {
+                padding: 24px 16px;
+                border: none;
+                background: transparent;
+                max-width: 100%;
+            }
+
+            .confirmation-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+            }
+
+            .confirmation-title {
+                font-size: 18px;
+                margin-bottom: 10px;
+            }
+
+            .confirmation-text {
+                font-size: 12px;
+                margin-bottom: 16px;
+            }
+
+            .confirmation-steps {
+                padding: 14px;
+                margin-bottom: 16px;
+                font-size: 12px;
+            }
+
+            .confirmation-steps ol {
+                margin-left: 16px;
+            }
+
+            .confirmation-steps li {
+                margin-bottom: 8px;
+            }
+
+            .confirmation-email {
+                font-size: 12px;
+                padding: 10px;
+            }
+
+            .confirmation-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .confirmation-actions button {
+                padding: 10px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .register-container {
+                padding: 16px 12px;
+            }
+
+            .register-logo {
+                font-size: 20px;
+                margin-bottom: 6px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            .form-group input {
+                padding: 9px 10px;
+                font-size: 12px;
+            }
+
+            .register-btn {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            .confirmation-content {
+                padding: 16px 12px;
+            }
+
+            .confirmation-icon {
+                font-size: 40px;
+                margin-bottom: 12px;
+            }
+
+            .confirmation-title {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+
+            .confirmation-text {
+                font-size: 11px;
+                margin-bottom: 12px;
+            }
+
+            .confirmation-steps {
+                padding: 10px;
+                margin-bottom: 12px;
+                font-size: 10px;
+            }
+
+            .confirmation-steps ol {
+                margin-left: 14px;
+            }
+
+            .confirmation-steps li {
+                margin-bottom: 6px;
+            }
+        }
+
+        /* Suporte para teclado em mobile */
+        @supports (padding: max(0px)) {
+            .register-container {
+                padding-bottom: max(40px, env(safe-area-inset-bottom));
+            }
+        }
+
+        input, textarea, select {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <div class="register-logo">IRON<span>FIT</span></div>
+            <div class="register-subtitle">CRIAR NOVA CONTA</div>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <form id="registerForm" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label for="fullname">Nome Completo</label>
+                <input 
+                    type="text" 
+                    id="fullname" 
+                    placeholder="Seu nome"
+                    required
+                />
+                <div class="error-message" id="fullnameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    placeholder="seu.email@exemplo.com"
+                    required
+                />
+                <div class="error-message" id="emailError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="••••••••"
+                    minlength="8"
+                    required
+                    onkeyup="checkPasswordStrength(this.value)"
+                />
+                <div class="strength-bar">
+                    <div class="strength-indicator" id="strengthIndicator"></div>
+                </div>
+                <div class="password-strength" id="passwordStrength">Força: fraca</div>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirmar Senha</label>
+                <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    placeholder="••••••••"
+                    required
+                />
+                <div class="error-message" id="confirmPasswordError"></div>
+            </div>
+
+            <div class="terms-group">
+                <input type="checkbox" id="termsCheck" required />
+                <label for="termsCheck" style="margin: 0;">
+                    Concordo com os <a href="#" onclick="event.preventDefault()">Termos de Serviço</a> e <a href="#" onclick="event.preventDefault()">Política de Privacidade</a>
+                </label>
+            </div>
+
+            <button type="submit" class="register-btn" id="registerBtn">Criar Conta 💪</button>
+        </form>
+
+        <div class="register-footer">
+            <p>Já tem conta? <a onclick="goToLogin()">Faça login</a></p>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Email -->
+    <div id="emailConfirmationModal" class="email-confirmation-modal">
+        <div class="confirmation-content">
+            <div class="confirmation-icon">📧</div>
+            <div class="confirmation-title">Confirme seu Email</div>
+            <p class="confirmation-text">
+                Uma mensagem foi enviada para:
+            </p>
+            <div class="confirmation-email" id="confirmationEmail">
+                seu.email@exemplo.com
+            </div>
+            <div class="confirmation-steps">
+                <ol>
+                    <li>Abra seu <strong>email</strong> (pode estar em "Spam")</li>
+                    <li>Clique no link <strong>"Confirmar Email"</strong></li>
+                    <li>Volte aqui e faça <strong>login</strong></li>
+                    <li>Pronto! Acesse seu treino 💪</li>
+                </ol>
+            </div>
+            <p class="confirmation-text" style="font-size: 12px; color: #999;">
+                Não recebeu? Verifique sua pasta de spam ou clique em "Reenviar Email" abaixo.
+            </p>
+            <div class="confirmation-actions">
+                <button class="btn-primary" onclick="goToLogin()">Ir para Login 🔓</button>
+                <button class="btn-secondary" onclick="resendConfirmationEmail()">Reenviar 📨</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="src/config.js"></script>
+    <script src="src/login.js"></script>
+
+    <script>
+        // Verificar força da senha
+        function checkPasswordStrength(password) {
+            const strengthEl = document.getElementById('passwordStrength');
+            const indicator = document.getElementById('strengthIndicator');
+            
+            if (!password) {
+                strengthEl.style.display = 'none';
+                indicator.className = 'strength-indicator';
+                return;
+            }
+
+            strengthEl.style.display = 'block';
+            let strength = 0;
+
+            if (password.length >= 8) strength++;
+            if (password.length >= 12) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+            if (strength < 3) {
+                indicator.className = 'strength-indicator weak';
+                strengthEl.textContent = 'Força: fraca';
+            } else if (strength < 5) {
+                indicator.className = 'strength-indicator medium';
+                strengthEl.textContent = 'Força: média';
+            } else {
+                indicator.className = 'strength-indicator strong';
+                strengthEl.textContent = 'Força: forte';
+            }
+        }
+
+        // Função de registro
+        async function handleRegister(event) {
+            event.preventDefault();
+
+            const fullname = document.getElementById('fullname').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const termsCheck = document.getElementById('termsCheck').checked;
+            const registerBtn = document.getElementById('registerBtn');
+
+            clearErrors();
+
+            // Validações
+            if (!fullname) {
+                showError('fullnameError', 'Nome é obrigatório');
+                return;
+            }
+
+            if (fullname.length < 3) {
+                showError('fullnameError', 'Nome deve ter no mínimo 3 caracteres');
+                return;
+            }
+
+            if (!email) {
+                showError('emailError', 'Email é obrigatório');
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                showError('emailError', 'Email inválido');
+                return;
+            }
+
+            if (!password || password.length < 8) {
+                showError('passwordError', 'Senha deve ter no mínimo 8 caracteres');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('confirmPasswordError', 'Senhas não coincidem');
+                return;
+            }
+
+            if (!termsCheck) {
+                showAlert('Você deve concordar com os Termos de Serviço', 'warning');
+                return;
+            }
+
+            if (!supabaseClient) {
+                showAlert('Sistema de autenticação não configurado', 'error');
+                return;
+            }
+
+            // Fazer signup
+            registerBtn.classList.add('loading');
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'Criando conta... ⏳';
+
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: fullname
+                        }
+                    }
+                });
+
+                if (error) {
+                    if (error.message.includes('User already registered')) {
+                        showAlert('Email já cadastrado. Faça login ou use outro email', 'error');
+                    } else if (error.message.includes('weak password')) {
+                        showAlert('Senha muito fraca. Use maiúsculas, números e símbolos', 'error');
+                    } else {
+                        showAlert('Erro ao criar conta: ' + error.message, 'error');
+                    }
+                } else if (data && data.user) {
+                    // Armazenar dados do usuário
+                    localStorage.setItem('ironfit_userEmail', email);
+                    localStorage.setItem('ironfit_fullName', fullname);
+                    localStorage.setItem('ironfit_userId', data.user.id);
+                    
+                    // Mostrar modal de confirmação
+                    showConfirmationModal(email);
+                }
+            } catch (err) {
+                showAlert('Erro na conexão: ' + err.message, 'error');
+            } finally {
+                registerBtn.classList.remove('loading');
+                registerBtn.disabled = false;
+                registerBtn.textContent = 'Criar Conta 💪';
+            }
+        }
+
+        // Mostrar modal de confirmação de email
+        function showConfirmationModal(email) {
+            document.getElementById('confirmationEmail').textContent = email;
+            document.getElementById('emailConfirmationModal').classList.add('show');
+        }
+
+        // Reenviar email de confirmação
+        async function resendConfirmationEmail() {
+            const email = document.getElementById('confirmationEmail').textContent;
+            if (!supabaseClient) {
+                showAlert('Sistema não configurado', 'error');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.auth.resend({
+                    type: 'signup',
+                    email: email
+                });
+
+                if (error) {
+                    showAlert('Erro ao reenviar: ' + error.message, 'error');
+                } else {
+                    showAlert('✅ Email reenviado! Verifique sua caixa de entrada', 'success');
+                }
+            } catch (err) {
+                showAlert('Erro: ' + err.message, 'error');
+            }
+        }
+
+        // Funções auxiliares
+        function isValidEmail(email) {
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return regex.test(email);
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.classList.add('show');
+
+                const inputId = elementId.replace('Error', '');
+                const input = document.getElementById(inputId);
+                if (input) input.classList.add('error');
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+            document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]').forEach(el => {
+                el.classList.remove('error');
+            });
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.textContent = message;
+            alertBox.className = `alert show ${type}`;
+            
+            if (type !== 'success') {
+                setTimeout(() => {
+                    alertBox.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        function goToLogin() {
+            // Se já está autenticado (após confirmar email), vai direto pro app
+            if (supabaseClient) {
+                supabaseClient.auth.getUser().then(({ data }) => {
+                    if (data && data.user) {
+                        // Usuário confirmou email, vai direto pro app
+                        window.location.href = 'index.html';
+                    } else {
+                        // Ainda não confirmou, vai pro login
+                        window.location.href = 'login.html';
+                    }
+                }).catch(() => {
+                    window.location.href = 'login.html';
+                });
+            } else {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Verificar se já está logado
+        async function checkIfLoggedIn() {
+            if (!supabaseClient) return;
+
+            try {
+                const { data, error } = await supabaseClient.auth.getUser();
+                if (data && data.user) {
+                    window.location.href = 'index.html';
+                }
+            } catch (err) {
+                console.log('Usuário não logado');
+            }
+        }
+
+        checkIfLoggedIn();
+    </script>
+</body>
+</html>

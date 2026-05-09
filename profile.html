@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="supabase-url" content="https://oqqoafejnzoolbpskbji.supabase.co" />
+  <meta name="supabase-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcW9hZmVqbnpvb2xicHNrYmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODQ0NzYsImV4cCI6MjA5MjM2MDQ3Nn0.28ilXh_YHdf7PBCrEz4r_gA20MmeOmo7ZViNIixMJgM" />
+  <meta name="csrf-token" content="temporary-placeholder" />
+  <title>IRONFIT — Meu Perfil</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .profile-page {
+      min-height: 100vh;
+      background: var(--black);
+    }
+    .profile-header {
+      background: var(--black2);
+      border-bottom: 1px solid var(--black4);
+      padding: 40px 48px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    .profile-avatar-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: var(--black);
+      border: 4px solid var(--black4);
+      object-fit: cover;
+      overflow: hidden;
+    }
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .profile-avatar-change {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: var(--accent);
+      border: 3px solid var(--black2);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .profile-avatar-change:hover {
+      transform: scale(1.1);
+      background: #fff;
+    }
+    .profile-info h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 2px;
+      color: var(--white);
+      line-height: 1;
+    }
+    .profile-info h1 span {
+      color: var(--accent);
+    }
+    .profile-email {
+      font-size: 14px;
+      color: var(--gray3);
+      margin-top: 8px;
+    }
+    .profile-meta {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .profile-badge {
+      background: var(--black3);
+      border: 1px solid var(--black5);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--gray3);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .profile-badge.accent {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .profile-content {
+      padding: 32px 48px;
+      max-width: 1000px;
+    }
+    .profile-section {
+      background: var(--black2);
+      border: 1px solid var(--black4);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .profile-section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--gray3);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--black4);
+    }
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .profile-grid-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .profile-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .profile-actions .action-btn {
+      padding: 12px 28px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .profile-actions .action-btn.primary {
+      background: var(--accent);
+      color: var(--black);
+      border-color: var(--accent);
+    }
+    .profile-actions .action-btn.primary:hover {
+      background: #fff;
+      box-shadow: 0 4px 16px rgba(232,255,0,0.3);
+    }
+    .profile-actions .action-btn.danger {
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .profile-actions .action-btn.danger:hover {
+      background: rgba(255,62,62,0.1);
+    }
+
+    .topbar-profile {
+      display: none;
+    }
+
+    /* Mensagens */
+    .profile-alert {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      display: none;
+    }
+    .profile-alert.show {
+      display: block;
+      animation: msgIn 0.3s ease;
+    }
+    .profile-alert.success {
+      background: rgba(68,255,100,0.1);
+      border: 1px solid #44ff64;
+      color: #44ff64;
+    }
+    .profile-alert.error {
+      background: rgba(255,68,68,0.1);
+      border: 1px solid var(--red);
+      color: var(--red);
+    }
+
+    /* Toggle switch */
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--black5);
+    }
+    .toggle-group:last-child {
+      border-bottom: none;
+    }
+    .toggle-label {
+      font-size: 14px;
+      color: var(--white);
+    }
+    .toggle-desc {
+      font-size: 12px;
+      color: var(--gray3);
+      margin-top: 2px;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: var(--black5);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .toggle-switch.active {
+      background: var(--accent);
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: var(--white);
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: all 0.3s;
+    }
+    .toggle-switch.active::after {
+      left: 22px;
+      background: var(--black);
+    }
+
+    @media (max-width: 900px) {
+      .profile-header {
+        padding: 24px 20px;
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+      }
+      .profile-avatar {
+        width: 100px;
+        height: 100px;
+        font-size: 40px;
+      }
+      .profile-info h1 {
+        font-size: 32px;
+      }
+      .profile-meta {
+        justify-content: center;
+      }
+      .profile-content {
+        padding: 20px;
+      }
+      .profile-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .profile-actions {
+        flex-direction: column;
+      }
+      .profile-actions .action-btn {
+        width: 100%;
+      }
+    }
+    @media (max-width: 480px) {
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+      .profile-section {
+        padding: 20px 16px;
+      }
+      .profile-info h1 {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- TOPBAR MOBILE -->
+  <header class="topbar">
+    <div class="topbar-logo">IRON<span>FIT</span></div>
+    <button class="hamburger" onclick="window.location.href='index.html'">&#10005;</button>
+  </header>
+
+  <div class="profile-page">
+    <div class="profile-header">
+      <div class="profile-avatar-wrap">
+        <div class="profile-avatar" id="profileAvatar">💪</div>
+        <div class="profile-avatar-change" onclick="document.getElementById('avatarInput').click()" title="Alterar foto">📷</div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarChange(event)">
+      </div>
+      <div class="profile-info">
+        <h1 id="profileName">IRON<span>FIT</span> USER</h1>
+        <div class="profile-email" id="profileEmail">user@email.com</div>
+        <div class="profile-meta">
+          <div class="profile-badge accent" id="profileGoalBadge">💪 Hipertrofia</div>
+          <div class="profile-badge" id="profileLevelBadge">⭐ Intermediário</div>
+          <div class="profile-badge" id="profileFreqBadge">🏋️ 4x/semana</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-content">
+      <div id="profileAlert" class="profile-alert"></div>
+
+      <!-- DADOS PESSOAIS -->
+      <div class="profile-section">
+        <div class="profile-section-title">Dados Pessoais</div>
+        <div class="profile-grid">
+          <div class="form-group">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" class="form-input" id="pfFullName" placeholder="Seu nome" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Altura (cm)</label>
+            <input type="number" class="form-input" id="pfHeight" placeholder="Ex: 175" min="100" max="250" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Peso Atual (kg)</label>
+            <input type="number" class="form-input" id="pfWeight" placeholder="Ex: 80.5" step="0.1" min="30" max="300" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Idade</label>
+            <input type="number" class="form-input" id="pfAge" placeholder="Ex: 25" min="12" max="100" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gênero</label>
+            <select class="form-input" id="pfGender">
+              <option value="">Selecione</option>
+              <option value="masculino">Masculino</option>
+              <option value="feminino">Feminino</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">IMC</label>
+            <input type="text" class="form-input" id="pfIMC" readonly placeholder="Calculado automaticamente" style="background: var(--black4); color: var(--gray3);" />
+          </div>
+        </div>
+      </div>
+
+      <!-- OBJETIVOS -->
+      <div class="profile-section">
+        <div class="profile-section-title">Objetivos & Nível</div>
+        <div class="profile-grid">
+          <div class="form-group">
+            <label class="form-label">Objetivo Principal</label>
+            <select class="form-input" id="pfGoal">
+              <option value="">Selecione...</option>
+              <option value="hipertrofia">Hipertrofia (Ganho de Massa)</option>
+              <option value="forca">Força Máxima</option>
+              <option value="emagrecimento">Emagrecimento</option>
+              <option value="resistencia">Resistência</option>
+              <option value="funcional">Funcional</option>
+              <option value="saude">Saúde & Bem-estar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nível de Experiência</label>
+            <select class="form-input" id="pfLevel">
+              <option value="">Selecione...</option>
+              <option value="iniciante">Iniciante (< 6 meses)</option>
+              <option value="intermediario">Intermediário (6 meses - 2 anos)</option>
+              <option value="avancado">Avançado (2+ anos)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Frequência Semanal</label>
+            <select class="form-input" id="pfFrequency">
+              <option value="">Selecione...</option>
+              <option value="3">3x por semana</option>
+              <option value="4">4x por semana</option>
+              <option value="5">5x por semana</option>
+              <option value="6">6x por semana</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEDIDAS CORPORAIS -->
+      <div class="profile-section">
+        <div class="profile-section-title">Medidas Corporais (cm)</div>
+        <div class="profile-grid">
+          <div class="form-group">
+            <label class="form-label">Peito</label>
+            <input type="number" class="form-input" id="pfChest" placeholder="cm" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cintura</label>
+            <input type="number" class="form-input" id="pfWaist" placeholder="cm" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quadril</label>
+            <input type="number" class="form-input" id="pfHip" placeholder="cm" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Braço Direito</label>
+            <input type="number" class="form-input" id="pfArmR" placeholder="cm" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Braço Esquerdo</label>
+            <input type="number" class="form-input" id="pfArmL" placeholder="cm" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Coxa Direita</label>
+            <input type="number" class="form-input" id="pfThighR" placeholder="cm" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Coxa Esquerda</label>
+            <input type="number" class="form-input" id="pfThighL" placeholder="cm" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Panturrilha</label>
+            <input type="number" class="form-input" id="pfCalf" placeholder="cm" step="0.1" />
+          </div>
+        </div>
+      </div>
+
+      <!-- PREFERÊNCIAS -->
+      <div class="profile-section">
+        <div class="profile-section-title">Preferências</div>
+        <div class="toggle-group">
+          <div>
+            <div class="toggle-label">Notificações</div>
+            <div class="toggle-desc">Receber lembretes de treino e novidades</div>
+          </div>
+          <div class="toggle-switch active" id="toggleNotifications" onclick="toggleSwitch(this)"></div>
+        </div>
+        <div class="toggle-group">
+          <div>
+            <div class="toggle-label">Tema Escuro</div>
+            <div class="toggle-desc">Interface no modo escuro (sempre ativo)</div>
+          </div>
+          <div class="toggle-switch active" id="toggleDarkTheme" onclick="toggleSwitch(this)"></div>
+        </div>
+        <div class="toggle-group">
+          <div>
+            <div class="toggle-label">Compartilhar Progresso</div>
+            <div class="toggle-desc">Permitir que outros vejam seu progresso</div>
+          </div>
+          <div class="toggle-switch" id="toggleShareProgress" onclick="toggleSwitch(this)"></div>
+        </div>
+      </div>
+
+      <!-- AÇÕES -->
+      <div class="profile-actions">
+        <button class="action-btn primary" onclick="saveProfile()">💾 Salvar Perfil</button>
+        <button class="action-btn" onclick="resetProfile()">🔄 Resetar</button>
+        <button class="action-btn danger" onclick="deleteAccount()">🗑️ Excluir Conta</button>
+        <button class="action-btn" onclick="window.location.href='index.html'">← Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="src/config.js"></script>
+  <script src="src/login.js"></script>
+  <script>
+    let currentUser = null;
+    let profileData = {};
+
+    // Aguardar cliente Supabase ser inicializado (compartilhado com index.html)
+    function waitForSupabase(timeoutMs = 3000) {
+      return new Promise((resolve) => {
+        const start = Date.now();
+        const check = () => {
+          if (window.supabaseClient) {
+            console.log('✅ Supabase client encontrado (compartilhado)');
+            resolve();
+          } else if (Date.now() - start > timeoutMs) {
+            console.warn('⚠️ Supabase não disponível após timeout');
+            resolve();
+          } else {
+            setTimeout(check, 50);
+          }
+        };
+        check();
+      });
+    }
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Verificar se está logado
+      await waitForSupabase();
+      
+      // Se tem supabaseClient, tentar recuperar sessão
+      if (window.supabaseClient?.auth) {
+        try {
+          const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+          if (error || !user) {
+            console.log('❌ Usuário não logado, redirecionando');
+            currentUser = null;
+          }
+          currentUser = user || null;
+        } catch (e) {
+          console.warn('Erro ao verificar autenticacao. Perfil em modo local:', e);
+          currentUser = null;
+        }
+      }
+      
+      await initProfile();
+    });
+
+    async function initProfile() {
+      // Funciona com o cliente compartilhado
+      console.log('✅ Perfil carregando com cliente compartilhado');
+
+      try {
+        if (!currentUser) {
+          const localEmail = localStorage.getItem('ironfit_userEmail') || localStorage.getItem('userEmail') || 'offline@ironfit.local';
+          const localName = localStorage.getItem('ironfit_fullName') || localStorage.getItem('userName') || localEmail.split('@')[0] || 'Usuario';
+          currentUser = { id: null, email: localEmail, user_metadata: { full_name: localName } };
+        }
+        if (!currentUser) {
+          console.log('❌ Usuário não definido');
+          throw new Error('Usuário não autenticado');
+        }
+
+        const fullName = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
+        document.getElementById('profileName').innerHTML = fullName + '<span> FIT</span>';
+        document.getElementById('profileEmail').textContent = currentUser.email;
+        document.getElementById('pfFullName').value = fullName;
+        
+        // Avatar — carregar do localStorage se existir
+        const savedAvatar = localStorage.getItem('ironfit_avatar');
+        const avatarEl = document.getElementById('profileAvatar');
+        if (savedAvatar) {
+          avatarEl.innerHTML = `<img src="${savedAvatar}" alt="Avatar">`;
+        } else {
+          const avatarLetter = fullName.charAt(0).toUpperCase();
+          avatarEl.textContent = avatarLetter;
+        }
+
+        // Carregar perfil do localStorage ou Supabase
+        await loadProfileData();
+
+        // Calcular IMC quando peso/altura mudam
+        document.getElementById('pfWeight').addEventListener('input', calcIMC);
+        document.getElementById('pfHeight').addEventListener('input', calcIMC);
+        calcIMC();
+
+      } catch (err) {
+        console.error('❌ Erro ao carregar perfil:', err);
+        showAlert('Erro ao carregar perfil: ' + err.message, 'error');
+      }
+    }
+
+    async function loadProfileData() {
+      console.log('📦 Carregando dados do perfil...');
+      
+      // Tentar localStorage primeiro
+      const cached = localStorage.getItem('ironfit_profile');
+      if (cached) {
+        try {
+          profileData = JSON.parse(cached);
+          fillForm(profileData);
+          console.log('✅ Dados carregados do localStorage');
+        } catch (e) {
+          console.warn('Perfil local corrompido. Usando dados vazios:', e);
+          profileData = {};
+        }
+      }
+
+      // Tentar Supabase se disponível e se o usuário estiver logado
+      if (!window.supabaseClient?.from || !currentUser?.id) {
+        console.log('⚠️ Supabase não disponível ou usuário sem ID, usando localStorage');
+        return;
+      }
+
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            console.log('ℹ️ Perfil não existe no Supabase (novo usuário)');
+          } else {
+            console.warn('⚠️ Erro ao buscar perfil:', error.message);
+          }
+          return;
+        }
+
+        if (data) {
+          profileData = data;
+          fillForm(data);
+          localStorage.setItem('ironfit_profile', JSON.stringify(data));
+          console.log('✅ Dados carregados do Supabase');
+        }
+      } catch (e) {
+        console.warn('Nao foi possivel carregar perfil do Supabase:', e);
+      }
+    }
+
+    function fillForm(data) {
+      if (data.height) document.getElementById('pfHeight').value = data.height;
+      if (data.weight) document.getElementById('pfWeight').value = data.weight;
+      if (data.age) document.getElementById('pfAge').value = data.age;
+      if (data.gender) document.getElementById('pfGender').value = data.gender;
+      if (data.goal) {
+        document.getElementById('pfGoal').value = data.goal;
+        updateBadges(data.goal, data.experience_level, data.weekly_frequency);
+      }
+      if (data.experience_level) document.getElementById('pfLevel').value = data.experience_level;
+      if (data.weekly_frequency) document.getElementById('pfFrequency').value = data.weekly_frequency;
+      
+      // Medidas
+      if (data.chest) document.getElementById('pfChest').value = data.chest;
+      if (data.waist) document.getElementById('pfWaist').value = data.waist;
+      if (data.hip) document.getElementById('pfHip').value = data.hip;
+      if (data.arm_r) document.getElementById('pfArmR').value = data.arm_r;
+      if (data.arm_l) document.getElementById('pfArmL').value = data.arm_l;
+      if (data.thigh_r) document.getElementById('pfThighR').value = data.thigh_r;
+      if (data.thigh_l) document.getElementById('pfThighL').value = data.thigh_l;
+      if (data.calf) document.getElementById('pfCalf').value = data.calf;
+
+      // Preferências
+      if (data.notifications !== undefined) {
+        const toggle = document.getElementById('toggleNotifications');
+        if (!data.notifications) toggle.classList.remove('active');
+        else toggle.classList.add('active');
+      }
+      if (data.share_progress !== undefined) {
+        const toggle = document.getElementById('toggleShareProgress');
+        if (data.share_progress) toggle.classList.add('active');
+        else toggle.classList.remove('active');
+      }
+    }
+
+    function updateBadges(goal, level, freq) {
+      const goalMap = {
+        hipertrofia: '💪 Hipertrofia',
+        forca: '⚡ Força',
+        emagrecimento: '🔥 Emagrecimento',
+        resistencia: '🏃 Resistência',
+        funcional: '🤸 Funcional',
+        saude: '❤️ Saúde'
+      };
+      const levelMap = {
+        iniciante: '⭐ Iniciante',
+        intermediario: '⭐⭐ Intermediário',
+        avancado: '⭐⭐⭐ Avançado'
+      };
+      
+      if (goal) document.getElementById('profileGoalBadge').textContent = goalMap[goal] || goal;
+      if (level) document.getElementById('profileLevelBadge').textContent = levelMap[level] || level;
+      if (freq) document.getElementById('profileFreqBadge').textContent = `🏋️ ${freq}x/semana`;
+    }
+
+    function calcIMC() {
+      const weight = parseFloat(document.getElementById('pfWeight').value);
+      const height = parseFloat(document.getElementById('pfHeight').value);
+      if (weight && height) {
+        const imc = (weight / ((height / 100) ** 2)).toFixed(1);
+        document.getElementById('pfIMC').value = imc;
+      }
+    }
+
+    function toggleSwitch(el) {
+      el.classList.toggle('active');
+    }
+
+    async function saveProfile() {
+      const data = {
+        user_id: currentUser?.id || null,
+        full_name: document.getElementById('pfFullName').value,
+        height: document.getElementById('pfHeight').value || null,
+        weight: document.getElementById('pfWeight').value || null,
+        age: document.getElementById('pfAge').value || null,
+        gender: document.getElementById('pfGender').value || null,
+        goal: document.getElementById('pfGoal').value || null,
+        experience_level: document.getElementById('pfLevel').value || null,
+        weekly_frequency: document.getElementById('pfFrequency').value || null,
+        chest: document.getElementById('pfChest').value || null,
+        waist: document.getElementById('pfWaist').value || null,
+        hip: document.getElementById('pfHip').value || null,
+        arm_r: document.getElementById('pfArmR').value || null,
+        arm_l: document.getElementById('pfArmL').value || null,
+        thigh_r: document.getElementById('pfThighR').value || null,
+        thigh_l: document.getElementById('pfThighL').value || null,
+        calf: document.getElementById('pfCalf').value || null,
+        notifications: document.getElementById('toggleNotifications').classList.contains('active'),
+        share_progress: document.getElementById('toggleShareProgress').classList.contains('active'),
+        updated_at: new Date().toISOString()
+      };
+
+      // Salvar no localStorage sempre
+      localStorage.setItem('ironfit_profile', JSON.stringify(data));
+      console.log('✅ Perfil salvo no localStorage');
+
+      let savedToSupabase = false;
+      if (window.supabaseClient?.from && currentUser?.id) {
+        try {
+          console.log('📤 Salvando no Supabase...');
+          const { error } = await window.supabaseClient
+            .from('user_profiles')
+            .upsert(data, { onConflict: 'user_id' });
+
+          if (!error) {
+            savedToSupabase = true;
+            console.log('✅ Perfil salvo no Supabase');
+          } else {
+            console.warn('⚠️ Erro ao salvar no Supabase:', error);
+          }
+        } catch (err) {
+          console.warn('❌ Erro ao salvar no Supabase:', err);
+        }
+      }
+
+      // Mostrar resultado
+      if (savedToSupabase) {
+        showAlert('✅ Perfil salvo com sucesso!', 'success');
+      } else {
+        showAlert('✅ Perfil salvo (offline mode)', 'success');
+      }
+
+      // Atualizar badges
+      updateBadges(data.goal, data.experience_level, data.weekly_frequency);
+      
+      // Atualizar nome na interface
+      if (data.full_name) {
+        document.getElementById('profileName').innerHTML = data.full_name + '<span> FIT</span>';
+      }
+    }
+
+    function resetProfile() {
+      if (!confirm('Resetar todos os campos?')) return;
+      document.querySelectorAll('.form-input').forEach(input => {
+        if (!input.readOnly) input.value = '';
+      });
+      calcIMC();
+    }
+
+    async function deleteAccount() {
+      if (!confirm('⚠️ ATENÇÃO: Isso desconectará sua conta e limpará todos os dados locais!\n\nDeseja continuar?')) return;
+      if (!confirm('Tem certeza? Esta ação não pode ser desfeita.')) return;
+
+      try {
+        if (window.supabaseClient?.from && currentUser?.id) {
+          console.log('🗑️ Deletando conta do Supabase...');
+          await window.supabaseClient.from('user_profiles').delete().eq('user_id', currentUser.id);
+          await window.supabaseClient.auth.signOut();
+          console.log('✅ Conta deletada');
+        }
+      } catch (err) {
+        console.error('❌ Erro ao excluir conta:', err);
+      } finally {
+        // Limpar dados locais
+        localStorage.clear();
+        window.location.href = 'login.html';
+      }
+    }
+
+    function handleAvatarChange(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const avatar = document.getElementById('profileAvatar');
+        avatar.innerHTML = `<img src="${e.target.result}" alt="Avatar">`;
+        
+        // Salvar no localStorage
+        localStorage.setItem('ironfit_avatar', e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('profileAlert');
+      alert.textContent = message;
+      alert.className = `profile-alert show ${type}`;
+      setTimeout(() => alert.classList.remove('show'), 5000);
+    }
+  </script>
+</body>
+</html>
+
