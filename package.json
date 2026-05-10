@@ -25,12 +25,13 @@
   "author": "IronFit Team",
   "license": "MIT",
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.4"
+    "@supabase/supabase-js": "^2.38.4",
+    "@vercel/analytics": "^2.0.1"
   },
   "devDependencies": {
+    "eslint": "^8.50.0",
     "http-server": "^14.1.1",
     "serve": "^14.1.2",
-    "eslint": "^8.50.0",
     "supabase": "^1.83.0"
   },
   "engines": {
