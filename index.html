@@ -2,14 +2,23 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="IRONFIT - Seu personal trainer de IA disponível 24h para musculação, hipertrofia, força e treinos personalizados." />
+  <meta name="theme-color" content="#e8ff00" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="IRONFIT" />
   <meta name="supabase-url" content="https://oqqoafejnzoolbpskbji.supabase.co" />
   <meta name="supabase-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcW9hZmVqbnpvb2xicHNrYmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODQ0NzYsImV4cCI6MjA5MjM2MDQ3Nn0.28ilXh_YHdf7PBCrEz4r_gA20MmeOmo7ZViNIixMJgM" />
   <meta name="csrf-token" content="temporary-placeholder" />
   <title>IRONFIT — Personal IA</title>
+  <link rel="icon" type="image/png" href="/icones/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icones/icon-192x192.png" />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
@@ -494,5 +503,12 @@
     console.log('App rodando em modo standalone');
 
   </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('SW registrado com sucesso'))
+      .catch(err => console.log('Erro no SW:', err));
+  }
+</script>
 </body>
 </html>

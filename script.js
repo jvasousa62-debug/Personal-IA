@@ -1865,3 +1865,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.error('Erro ao iniciar app:', e);
   }
 });
+// Registro do Service Worker para o PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registrado com sucesso!', reg))
+      .catch(err => console.log('Falha ao registrar o Service Worker:', err));
+  });
+}
