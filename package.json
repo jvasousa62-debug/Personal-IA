@@ -29,6 +29,7 @@
     "@vercel/analytics": "^2.0.1"
   },
   "devDependencies": {
+    "@types/react": "^19.2.14",
     "eslint": "^8.50.0",
     "http-server": "^14.1.1",
     "serve": "^14.1.2",
