@@ -36,34 +36,34 @@
 
     <!-- SIDEBAR NAV -->
     <nav class="sidebar">
-      <div class="sidebar-logo">IRON<span>FIT</span></div>
+      <div class="sidebar-logo brand-logo">IRON<span>FIT</span></div>
       <ul class="nav-links">
-        <li class="nav-item active" data-page="chat">
-          <span class="nav-icon">&#9776;</span>
+        <li class="nav-item active" data-page="chat" aria-current="page">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path><path d="M8 10h8"></path><path d="M8 14h5"></path></svg></span>
           <span>Personal IA</span>
         </li>
         <li class="nav-item" data-page="plans">
-          <span class="nav-icon">&#9635;</span>
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M8 11h8"></path><path d="M8 16h6"></path></svg></span>
           <span>Planilhas</span>
         </li>
         <li class="nav-item" data-page="exercises">
-          <span class="nav-icon">&#9654;</span>
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m10 8 6 4-6 4V8z"></path></svg></span>
           <span>Exercícios</span>
         </li>
         <li class="nav-item" data-page="builder">
-          <span class="nav-icon">&#9998;</span>
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg></span>
           <span>Montar Treino</span>
         </li>
         <li class="nav-item" data-page="progress">
-          <span class="nav-icon">&#128200;</span>
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></span>
           <span>Progresso</span>
         </li>
         <li class="nav-item" data-page="profile" onclick="openProfile()">
-          <span class="nav-icon">&#128100;</span>
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
           <span>Perfil</span>
         </li>
         <li class="nav-item" data-page="settings" onclick="openSettings()">
-          <span class="nav-icon">&#9881;</span>
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2l-.18 1.2a2 2 0 0 1-1 1.45l-1.1.62a2 2 0 0 0-.73 2.73l.6 1a2 2 0 0 1 0 2l-.6 1a2 2 0 0 0 .73 2.73l1.1.62a2 2 0 0 1 1 1.45l.18 1.2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2l.18-1.2a2 2 0 0 1 1-1.45l1.1-.62a2 2 0 0 0 .73-2.73l-.6-1a2 2 0 0 1 0-2l.6-1a2 2 0 0 0-.73-2.73l-1.1-.62a2 2 0 0 1-1-1.45L14.22 4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
           <span>Preferências</span>
         </li>
       </ul>
@@ -88,7 +88,7 @@
 
     <!-- MOBILE TOPBAR -->
     <header class="topbar">
-      <div class="topbar-logo">IRON<span>FIT</span></div>
+      <div class="topbar-logo brand-logo">IRON<span>FIT</span></div>
       <button class="hamburger" id="hamburger">&#9776;</button>
     </header>
 
@@ -116,32 +116,44 @@
         <div class="page-header">
           <div>
             <h1 class="page-title">Personal <span class="accent">IA</span></h1>
-            <p class="page-sub">Seu treinador pessoal disponível 24h</p>
+            <p class="page-sub">Seu treinador pessoal disponível <span>24h</span></p>
           </div>
           <div class="page-header-actions">
-            <div class="ai-status"><span class="pulse"></span> Online</div>
-            <button class="reset-chat-btn" id="resetChatBtn" title="Limpar histórico do chat">&#128465;</button>
+            <div class="ai-status" aria-live="polite">
+              <span class="pulse"></span>
+              <span class="status-copy"><strong>IA ativa</strong><small>~2s resposta</small></span>
+            </div>
+            <button class="reset-chat-btn" id="resetChatBtn" title="Limpar histórico do chat" aria-label="Limpar histórico do chat"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
           </div>
         </div>
         <div class="chat-container">
+          <div class="quick-start quick-start-compact" aria-label="Ajustes rápidos do treino">
+            <div class="quick-start-actions">
+              <button class="onboarding-chip" data-msg="Meu objetivo principal é hipertrofia. Monte um plano inicial.">Objetivo</button>
+              <button class="onboarding-chip" data-msg="Meu nível atual é iniciante. Quero um treino seguro.">Nível</button>
+              <button class="onboarding-chip" data-msg="Tenho 45 minutos por treino. Ajuste minha rotina.">Tempo</button>
+              <button class="onboarding-chip" data-msg="Tenho acesso a academia completa. Monte meu treino.">Equipamentos</button>
+            </div>
+          </div>
           <div class="chat-messages" id="chatMessages">
-            <div class="msg-wrapper ai">
+            <div class="msg-wrapper ai hero-message">
               <div class="msg-avatar">IA</div>
               <div class="msg-bubble ai">
-                <p>E aí, guerreiro! 💪 Sou o <strong>IRON IA</strong>, seu personal trainer virtual. Estou aqui pra te ajudar a montar treinos, tirar dúvidas sobre exercícios, nutrição, descanso e tudo mais.</p>
-                <p style="margin-top:8px;">Me conta: <strong>qual é o seu objetivo hoje?</strong></p>
+                <h2>Seu físico não muda por sorte.</h2>
+                <p>Sou o <strong>IRON IA</strong>. Vou transformar objetivo, rotina e equipamentos em ação: treino claro, progressão e ajustes sem enrolação.</p>
+                <p class="hero-question"><strong>Qual evolução vamos buscar hoje?</strong></p>
               </div>
             </div>
           </div>
           <div class="chat-suggestions">
-            <button class="suggestion-btn" data-msg="Quero montar um treino de hipertrofia">Treino de hipertrofia</button>
-            <button class="suggestion-btn" data-msg="Como faço para perder gordura mantendo músculo?">Perda de gordura</button>
-            <button class="suggestion-btn" data-msg="Qual a melhor dieta para ganho de massa?">Dieta para massa</button>
-            <button class="suggestion-btn" data-msg="Quanto tempo devo descansar entre as séries?">Descanso entre séries</button>
+            <button class="suggestion-btn goal-muscle" data-msg="Quero montar um treino de hipertrofia"><span class="suggestion-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg></span><span><strong>Hipertrofia</strong><small>volume e progressão</small></span></button>
+            <button class="suggestion-btn goal-cut" data-msg="Como faço para perder gordura mantendo músculo?"><span class="suggestion-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.5 0 2.5-1 2.5-2.5 0-1.2-.7-2.1-1.5-3-1-1.1-1.9-2.2-1.5-4.5 2.6 1.4 5 4.3 5 8a5 5 0 0 1-10 0c0-1.9.9-3.8 2.4-5.1-.1 1.7.1 3.3.6 4.6z"></path></svg></span><span><strong>Perda de gordura</strong><small>secar sem murchar</small></span></button>
+            <button class="suggestion-btn goal-food" data-msg="Qual a melhor dieta para ganho de massa?"><span class="suggestion-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h16"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M7 11a5 5 0 0 1 10 0"></path><path d="M8 19h8"></path></svg></span><span><strong>Dieta para massa</strong><small>macro base</small></span></button>
+            <button class="suggestion-btn goal-rest" data-msg="Quanto tempo devo descansar entre as séries?"><span class="suggestion-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M9 2h6"></path></svg></span><span><strong>Descanso</strong><small>ritmo de treino</small></span></button>
           </div>
           <div class="chat-input-area">
-            <textarea id="chatInput" class="chat-input" placeholder="Digite sua dúvida pro personal..." rows="1"></textarea>
-            <button class="send-btn" id="sendBtn">&#9654;</button>
+            <textarea id="chatInput" class="chat-input" placeholder="Conte seu objetivo, dúvida ou treino de hoje..." rows="1" aria-label="Mensagem para o personal IA"></textarea>
+            <button class="send-btn" id="sendBtn" title="Enviar mensagem" aria-label="Enviar mensagem"><span class="send-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4 20-7z"></path></svg></span></button>
           </div>
         </div>
       </section>

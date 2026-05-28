@@ -435,7 +435,10 @@ function setupNavigation() {
     if (target) target.classList.add('active');
     navItems.forEach(n => n.classList.remove('active'));
     mnavItems.forEach(n => n.classList.remove('active'));
+    navItems.forEach(n => n.removeAttribute('aria-current'));
+    mnavItems.forEach(n => n.removeAttribute('aria-current'));
     document.querySelectorAll(`[data-page="${pageId}"]`).forEach(n => n.classList.add('active'));
+    document.querySelectorAll(`[data-page="${pageId}"]`).forEach(n => n.setAttribute('aria-current', 'page'));
     if (pageId === 'exercises') renderExercises('all');
     if (pageId === 'builder') renderPicker('');
     if (pageId === 'progress') renderProgress();
@@ -914,18 +917,48 @@ function waitForNaturalResponse(startedAt) {
   return sleep(Math.max(0, targetDelay - elapsed));
 }
 
+function setChatReadyState(isReady) {
+  const sendBtn = document.getElementById('sendBtn');
+  const chatContainer = document.querySelector('.chat-container');
+  if (!sendBtn) return;
+
+  sendBtn.disabled = !isReady;
+  sendBtn.classList.toggle('is-thinking', !isReady);
+  chatContainer?.classList.toggle('is-thinking', !isReady);
+}
+
+function buildChatErrorFallback(error) {
+  const message = (error?.message || '').toLowerCase();
+
+  if (message.includes('auth') || message.includes('token') || message.includes('login')) {
+    return '**Estou no modo local agora.**\n\nSua sessão da IA online não foi validada, então vou responder por aqui sem travar o chat.\n\nMe diga seu objetivo, nível e quantos dias por semana você treina que eu monto um ajuste prático.';
+  }
+
+  return null;
+}
+
 async function sendMessage(userText) {
   if (!userText.trim()) return;
 
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
+  const chatContainer = document.querySelector('.chat-container');
+  const inputArea = document.querySelector('.chat-input-area');
   if (!input || !sendBtn) return;
 
-  sendBtn.disabled = true;
+  // Gamificacao leve: nao pode travar o chat se o modulo de XP nao carregar.
+  if (typeof awardXP === 'function') {
+    awardXP('chat_message', 8);
+  }
+
+  setChatReadyState(false);
+  inputArea?.classList.add('sent');
+  setTimeout(() => inputArea?.classList.remove('sent'), 420);
   input.value = '';
 
   appendMessage('user', userText);
   chatHistory.push({ role: 'user', content: userText });
+
 
   if (supabaseClient) {
     try {
@@ -954,7 +987,7 @@ async function sendMessage(userText) {
     chatHistory.push({ role: 'assistant', content: fallback });
     removeTyping(typingId);
     appendMessage('ai', fallback);
-    sendBtn.disabled = false;
+    setChatReadyState(true);
     return;
   }
 
@@ -968,7 +1001,7 @@ async function sendMessage(userText) {
       chatHistory.push({ role: 'assistant', content: fallback });
       removeTyping(typingId);
       appendMessage('ai', fallback);
-      sendBtn.disabled = false;
+      setChatReadyState(true);
       return;
     }
 
@@ -1044,7 +1077,7 @@ async function sendMessage(userText) {
     }
   } catch (e) {
     console.warn('IA online falhou, usando resposta local:', e.message);
-    const fallback = buildSmartResponse(userText);
+    const fallback = buildChatErrorFallback(e) || buildSmartResponse(userText);
     await waitForNaturalResponse(responseStartedAt);
     chatHistory.push({ role: 'assistant', content: fallback });
     removeTyping(typingId);
@@ -1065,7 +1098,7 @@ async function sendMessage(userText) {
       }
     }
   } finally {
-    sendBtn.disabled = false;
+    setChatReadyState(true);
   }
 }
 
@@ -1118,7 +1151,7 @@ async function resetChat() {
     const container = document.getElementById('chatMessages');
     if (container) {
       container.innerHTML = `
-        <div class="msg-wrapper ai">
+        <div class="msg-wrapper ai hero-message">
           <div class="msg-avatar">IA</div>
           <div class="msg-bubble ai">
             <p>✅ Chat resetado com SUCESSO!</p>
@@ -1144,13 +1177,14 @@ function appendMessage(role, text) {
   const container = document.getElementById('chatMessages');
   if (!container) return;
   const wrapper = document.createElement('div');
-  wrapper.className = `msg-wrapper ${role}`;
+  wrapper.className = `msg-wrapper ${role} animate-fade-in`;
   const avatar = document.createElement('div');
   avatar.className = 'msg-avatar';
   avatar.textContent = role === 'ai' ? 'IA' : 'U';
   const bubble = document.createElement('div');
   bubble.className = `msg-bubble ${role}`;
   bubble.innerHTML = text
+    .replace(/### (.*?)\n/g, '<h3 class="msg-title">$1</h3>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br>');
@@ -1167,7 +1201,7 @@ function showTyping() {
   const wrapper = document.createElement('div');
   wrapper.className = 'msg-wrapper ai';
   wrapper.id = id;
-  wrapper.innerHTML = `<div class="msg-avatar">IA</div><div class="msg-bubble ai"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  wrapper.innerHTML = `<div class="msg-avatar">IA</div><div class="msg-bubble ai typing-bubble"><div class="typing-indicator" aria-label="IRON IA pensando"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span class="typing-text">IRON IA ajustando seu plano</span></div></div>`;
   container.appendChild(wrapper);
   container.scrollTop = container.scrollHeight;
   return id;
@@ -1191,8 +1225,12 @@ function setupChat() {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
   });
-  document.querySelectorAll('.suggestion-btn').forEach(btn =>
-    btn.addEventListener('click', () => sendMessage(btn.dataset.msg))
+  document.querySelectorAll('.suggestion-btn, .onboarding-chip').forEach(btn =>
+    btn.addEventListener('click', () => {
+      btn.classList.add('is-pressed');
+      setTimeout(() => btn.classList.remove('is-pressed'), 260);
+      sendMessage(btn.dataset.msg);
+    })
   );
 
   // 🔥 EVENT LISTENER: RESETAR CHAT
@@ -1316,13 +1354,13 @@ async function openExerciseModal(id) {
         <div style="font-size:13px;color:var(--gray3);margin-top:4px;">${simplifyText(ex.muscles)}</div>
       </div>
     </div>
-    <div class="ex-recs" style="margin-bottom:12px;">
+    <div class="ex-recs-grid">
       <div class="ex-rec-box"><div class="ex-rec-label">Séries</div><div class="ex-rec-value">${vol.sets}</div></div>
       <div class="ex-rec-box"><div class="ex-rec-label">Reps</div><div class="ex-rec-value">${vol.reps}</div></div>
       <div class="ex-rec-box"><div class="ex-rec-label">Descanso</div><div class="ex-rec-value">${vol.rest}</div></div>
-      <div class="ex-rec-box"><div class="ex-rec-label">Carga Est.</div><div class="ex-rec-value" style="color:var(--accent,#e8ff00)">${personalLoad}</div></div>
+      <div class="ex-rec-box accent"><div class="ex-rec-label">Carga Est.</div><div class="ex-rec-value">${personalLoad}</div></div>
     </div>
-    <div style="font-size:11px;color:var(--gray3);margin-bottom:20px;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;">
+    <div class="ex-week-badge">
       📅 Semana ${week}/12 — ${vol.note}
     </div>
     <div class="ex-section"><div class="ex-section-title">Execução passo a passo</div><ol class="steps-list">${ex.steps.map((s, i) => `<li><span class="step-num">${i + 1}</span><span>${simplifyText(s)}</span></li>`).join('')}</ol></div>
