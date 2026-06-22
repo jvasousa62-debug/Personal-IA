@@ -128,6 +128,67 @@
             box-shadow: 0 4px 16px rgba(232,255,0,0.3);
         }
 
+        /* ===========================
+           Google button (match login theme)
+           =========================== */
+        .google-login-btn {
+            width: 100%;
+            padding: 14px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .google-login-btn:hover {
+            border-color: #e8ff00;
+            background: rgba(232,255,0,0.07);
+            box-shadow: 0 4px 16px rgba(232,255,0,0.12);
+        }
+
+        .google-login-btn:active {
+            transform: scale(0.98);
+        }
+
+        .google-login-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .google-login-btn {
+                padding: 13px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .google-login-btn {
+                padding: 11px;
+                font-size: 13px;
+                margin-top: 8px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .google-login-btn {
+                padding: 10px;
+                font-size: 12px;
+                margin-top: 6px;
+            }
+        }
+
+
         .login-btn:active {
             transform: scale(0.98);
         }
@@ -410,6 +471,16 @@
             <button type="submit" class="login-btn" id="loginBtn">Entrar 🔓</button>
         </form>
 
+<button type="button" class="google-login-btn" id="googleLoginBtn" onclick="handleGoogleLogin()">
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+        <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.81 2.73v2.27h2.92c1.71-1.57 2.69-3.88 2.69-6.64z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.71H.96v2.33C2.44 15.98 5.48 18 9 18z"/>
+        <path fill="#FBBC05" d="M3.97 10.7c-.18-.54-.28-1.11-.28-1.7s.1-1.16.28-1.7V4.97H.96A8.997 8.997 0 0 0 0 9c0 1.45.35 2.83.96 4.03l3.01-2.33z"/>
+        <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.97l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+    </svg>
+    <span>Continuar com Google</span>
+</button>
+
         <div class="divider">ou</div>
 
         <p style="text-align: center; font-size: 13px; color: #999; margin-bottom: 12px;">
@@ -439,6 +510,49 @@
         } catch (e) {
             console.warn('⚠️ Erro ao carregar Supabase:', e);
         }
+        async function handleGoogleLogin() {
+    const btn = document.getElementById('googleLoginBtn');
+ 
+    if (!supabaseClient) {
+        showAlert('Login com Google indisponível no momento. Tente o login com email.', 'error');
+        return;
+    }
+ 
+    if (btn) {
+        btn.disabled = true;
+        btn.querySelector('span').textContent = 'Conectando...';
+    }
+ 
+    try {
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                // Depois do login no Google, o Supabase redireciona para esta URL.
+                // Ajuste se o domínio de produção for diferente.
+                redirectTo: window.location.origin + '/index.html'
+            }
+        });
+ 
+        if (error) {
+            console.error('Erro no login com Google:', error);
+            showAlert('Erro ao conectar com Google: ' + error.message, 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.querySelector('span').textContent = 'Continuar com Google';
+            }
+        }
+        // Se não houver erro, o navegador é redirecionado para o Google,
+        // então não há necessidade de tratar sucesso aqui — o retorno
+        // acontece em outra navegação, já autenticado.
+    } catch (err) {
+        console.error('Erro inesperado no login com Google:', err);
+        showAlert('Erro inesperado. Tente novamente.', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.querySelector('span').textContent = 'Continuar com Google';
+        }
+    }
+}
 
         // Função melhorada de login
         async function handleLogin(event) {

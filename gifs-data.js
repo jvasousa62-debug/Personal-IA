@@ -1,7 +1,27 @@
 /**
- * IRONFIT — GIF Database + Fallback System
- * Fontes gratuitas: ExerciseDB (RapidAPI), Wikimedia Commons, Giphy, CSS animations
+ * IRONFIT — GIF Database (Supabase Storage)
+ * ---------------------------------------------------------------
+ * Substitui a integração antiga com ExerciseDB/RapidAPI por GIFs
+ * estáticos hospedados no bucket público "gifs" do Supabase Storage.
+ *
+ * Vantagens dessa abordagem:
+ * - Sem custo recorrente de API (RapidAPI cobrava por chamada)
+ * - Sem rate limit / sem risco de a API de terceiro cair
+ * - Carregamento direto via CDN do Supabase (rápido, cacheável)
+ *
+ * Exercícios sem GIF disponível caem automaticamente no fallback
+ * de animação CSS (ver buildCSSFallback), que já existia no app.
+ *
+ * Para adicionar novos GIFs no futuro:
+ * 1. Suba o arquivo .gif no bucket "gifs" do Supabase Storage
+ * 2. Nomeie o arquivo exatamente como o ID do exercício (ex: agachamento.gif)
+ * 3. Adicione o ID na lista AVAILABLE_GIFS abaixo
  */
+
+// =========================
+// CONFIG — Supabase Storage
+// =========================
+const SUPABASE_STORAGE_BASE = 'https://oqqoafejnzoolbpskbji.supabase.co/storage/v1/object/public/gifs';
 
 // =========================
 // VIDEO LOCAL MAPPING
@@ -12,86 +32,31 @@ const VIDEO_DB = {
 };
 
 // =========================
-// GIF PUBLIC MAPPING
-// URLs de GIFs gratuitos/domínio público mapeados por ID do exercício
+// GIFs DISPONÍVEIS NO BUCKET
+// Lista de IDs de exercício que possuem um GIF real hospedado.
+// Qualquer ID fora desta lista usa o fallback de animação CSS.
 // =========================
-const GIF_DB = {
-  // PEITO
-  'supino-reto':         { provider:'exercisedb', term:'barbell bench press' },
-  'supino-inclinado':    { provider:'exercisedb', term:'incline barbell bench press' },
-  'supino-declinado':    { provider:'exercisedb', term:'decline barbell bench press' },
-  'supino-halter':       { provider:'exercisedb', term:'dumbbell bench press' },
-  'crucifixo':           { provider:'exercisedb', term:'chest fly' },
-  'crossover':           { provider:'exercisedb', term:'cable crossover' },
-  'flexao':              { provider:'exercisedb', term:'push up' },
-  'mergulho-peito':      { provider:'exercisedb', term:'dip' },
-  'peck-deck':           { provider:'exercisedb', term:'pec deck fly' },
+const AVAILABLE_GIFS = [
+  'supino-inclinado',
+  'supino-halter',
+  'crucifixo',
+  'leg-press',
+  'agachamento-bulgaro',
+  'panturrilha-pe',
+  'elevacao-frontal',
+  'encolhimento',
+  'rosca-direta',
+  'rosca-concentrada',
+  'rosca-cabo',
+  'triceps-frances',
+  'mergulho-triceps',
+  'abdominal-supra',
+  'abdominal-infra',
+  'remada-maquina',
+  'puxada-frontal',
+];
 
-  // COSTAS
-  'levantamento-terra':  { provider:'exercisedb', term:'barbell deadlift' },
-  'remada-curvada':      { provider:'exercisedb', term:'barbell bent over row' },
-  'puxada-frontal':      { provider:'exercisedb', term:'lat pulldown' },
-  'barra-fixa':          { provider:'exercisedb', term:'pull up' },
-  'remada-unilateral':   { provider:'exercisedb', term:'dumbbell row' },
-  'remada-maquina':      { provider:'exercisedb', term:'seated row' },
-  'remada-serrote':      { provider:'exercisedb', term:'cable row' },
-  'pullover':            { provider:'exercisedb', term:'dumbbell pullover' },
-  'terra-romeno':        { provider:'exercisedb', term:'romanian deadlift' },
-  'terra-sumo':          { provider:'exercisedb', term:'sumo deadlift' },
-
-  // PERNAS
-  'agachamento':         { provider:'exercisedb', term:'barbell squat' },
-  'leg-press':           { provider:'exercisedb', term:'leg press' },
-  'cadeira-extensora':   { provider:'exercisedb', term:'leg extension' },
-  'mesa-flexora':        { provider:'exercisedb', term:'leg curl' },
-  'agachamento-hack':    { provider:'exercisedb', term:'hack squat' },
-  'agachamento-bulgaro': { provider:'exercisedb', term:'bulgarian split squat' },
-  'afundo':              { provider:'exercisedb', term:'lunge' },
-  'hip-thrust':          { provider:'exercisedb', term:'hip thrust' },
-  'stiff':               { provider:'exercisedb', term:'stiff leg deadlift' },
-  'panturrilha-pe':      { provider:'exercisedb', term:'standing calf raise' },
-  'panturrilha-sentado': { provider:'exercisedb', term:'seated calf raise' },
-  'abducao-maquina':     { provider:'exercisedb', term:'hip abduction' },
-  'adducao-maquina':     { provider:'exercisedb', term:'hip adduction' },
-
-  // OMBROS
-  'desenvolvimento':     { provider:'exercisedb', term:'dumbbell shoulder press' },
-  'desenvolvimento-barra': { provider:'exercisedb', term:'barbell overhead press' },
-  'elevacao-lateral':    { provider:'exercisedb', term:'lateral raise' },
-  'elevacao-frontal':    { provider:'exercisedb', term:'front raise' },
-  'face-pull':           { provider:'exercisedb', term:'face pull' },
-  'encolhimento':        { provider:'exercisedb', term:'shrug' },
-  'passaro':             { provider:'exercisedb', term:'reverse fly' },
-
-  // BÍCEPS
-  'rosca-direta':        { provider:'exercisedb', term:'barbell curl' },
-  'rosca-martelo':       { provider:'exercisedb', term:'hammer curl' },
-  'rosca-concentrada':   { provider:'exercisedb', term:'concentration curl' },
-  'rosca-inclinada':     { provider:'exercisedb', term:'incline curl' },
-  'rosca-cabo':          { provider:'exercisedb', term:'cable curl' },
-  'rosca-scott':         { provider:'exercisedb', term:'preacher curl' },
-
-  // TRÍCEPS
-  'triceps-pulley':      { provider:'exercisedb', term:'triceps pushdown' },
-  'triceps-frances':     { provider:'exercisedb', term:'skull crusher' },
-  'triceps-banco':       { provider:'exercisedb', term:'bench dip' },
-  'triceps-unilateral':  { provider:'exercisedb', term:'tricep pushdown' },
-  'triceps-corda':       { provider:'exercisedb', term:'rope pushdown' },
-  'mergulho-triceps':    { provider:'exercisedb', term:'dips' },
-  'kickback':            { provider:'exercisedb', term:'tricep kickback' },
-
-  // ABDÔMEN
-  'abdominal-supra':     { provider:'exercisedb', term:'crunch' },
-  'prancha':             { provider:'exercisedb', term:'plank' },
-  'abdominal-bicicleta': { provider:'exercisedb', term:'bicycle crunch' },
-  'abdominal-infra':     { provider:'exercisedb', term:'leg raise' },
-  'abdominal-obliquo':   { provider:'exercisedb', term:'oblique crunch' },
-  'abdominal-roda':      { provider:'exercisedb', term:'ab wheel' },
-  'elevacao-pernas-barra': { provider:'exercisedb', term:'hanging leg raise' },
-  'vacuo-abdominal':     { provider:'exercisedb', term:'stomach vacuum' },
-};
-
-// Mapeia cada exercício para um tipo de animação CSS
+// Mapeia cada exercício para um tipo de animação CSS (usado no fallback)
 const EXERCISE_ANIM_TYPE = {
   'supino-reto':'push','supino-inclinado':'push','supino-declinado':'push','supino-halter':'push',
   'crucifixo':'push','crossover':'push','flexao':'push','mergulho-peito':'push','peck-deck':'push',
@@ -113,81 +78,20 @@ const EXERCISE_ANIM_TYPE = {
 // GIF SERVICE
 // =========================
 const GIFService = {
-  // Cache em memória + localStorage
-  _cache: new Map(),
-  _localStorageKey: 'ironfit_gif_cache',
-
-  _loadPersistentCache() {
-    try {
-      const raw = localStorage.getItem(this._localStorageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        Object.entries(parsed).forEach(([k, v]) => this._cache.set(k, v));
-      }
-    } catch (e) { /* ignore */ }
-  },
-
-  _savePersistentCache() {
-    try {
-      const obj = {};
-      this._cache.forEach((v, k) => { obj[k] = v; });
-      localStorage.setItem(this._localStorageKey, JSON.stringify(obj));
-    } catch (e) { /* ignore */ }
-  },
-
   init() {
-    this._loadPersistentCache();
+    // Mantido por compatibilidade com chamadas existentes (script.js, ui.js).
+    // Não há mais cache em localStorage: as URLs são estáticas e o
+    // próprio navegador/CDN do Supabase já cacheiam os arquivos.
   },
 
+  // Retorna a URL do GIF se o exercício tiver um disponível, senão null.
+  // Mantém a assinatura async por compatibilidade com quem já chama
+  // `await GIFService.getGif(id)` no restante do app.
   async getGif(exerciseId) {
-    // 1. Verificar cache
-    if (this._cache.has(exerciseId)) {
-      const cached = this._cache.get(exerciseId);
-      if (cached && cached !== 'null') return cached;
+    if (!exerciseId || !AVAILABLE_GIFS.includes(exerciseId)) {
       return null;
     }
-
-    // 2. Tentar GIF local SOMENTE se fizer sentido (a pasta atual não garante todos os GIFs)
-    // Evita tentar carregar arquivos inexistentes (.gif1, etc.) e poluir console com 404.
-    const localUrl = `gifs/${exerciseId}.gif`;
-    const allowLocal = false; // <-- modo “silencioso”: não tenta local (foca em edge/CSS)
-
-    if (allowLocal) {
-      try {
-        const exists = await this._checkImageExists(localUrl);
-        if (exists) {
-          this._cache.set(exerciseId, localUrl);
-          this._savePersistentCache();
-          return localUrl;
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    // 3. Tentar ExerciseDB via Edge Function (mais importante)
-    if (typeof fetchGifFromExerciseDB === 'function') {
-      try {
-        const url = await fetchGifFromExerciseDB(exerciseId);
-        if (url) {
-          this._cache.set(exerciseId, url);
-          this._savePersistentCache();
-          return url;
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    // 4. Marcar como não encontrado para não tentar de novo
-    this._cache.set(exerciseId, null);
-    this._savePersistentCache();
-    return null;
-  },
-
-  _checkImageExists(url) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-      img.src = url;
-    });
+    return `${SUPABASE_STORAGE_BASE}/${exerciseId}.gif`;
   },
 
   // Gera um card com CSS animation puro (fallback visual animado)
@@ -220,9 +124,8 @@ const GIFService = {
   buildGifBlock(gifUrl, icon, loading=false, exerciseId=null) {
     // Verificar se existe vídeo local para este exercício
     const videoUrl = exerciseId && VIDEO_DB[exerciseId] ? VIDEO_DB[exerciseId] : null;
-    const animType = EXERCISE_ANIM_TYPE[exerciseId] || 'push';
     const fallbackHTML = this.buildCSSFallback(exerciseId || '', icon).replace(/'/g, "&#39;");
-    
+
     if (videoUrl) {
       return `<div class="ex-gif-container" id="gifBlock" style="background:#111;border-radius:0;overflow:visible;">
         <span class="ex-gif-badge">VÍDEO</span>
@@ -246,11 +149,10 @@ const GIFService = {
       </div>`;
     }
 
-    // Fallback animado CSS
+    // Fallback animado CSS (exercício ainda não tem GIF no bucket)
     return this.buildCSSFallback(exerciseId || '', icon);
   }
 };
 
-// Inicializar cache persistente ao carregar
+// Inicializar (no-op, mantido por compatibilidade)
 GIFService.init();
-

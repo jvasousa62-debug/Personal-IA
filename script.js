@@ -374,39 +374,10 @@ const EXERCISE_SEARCH_MAP = {
 const gifCache = {};
 
 async function fetchGifFromExerciseDB(exerciseId) {
-  // Verificar cache localStorage
-  if (gifCache[exerciseId]) return gifCache[exerciseId];
-  
-  const searchTerm = EXERCISE_SEARCH_MAP[exerciseId];
-  if (!searchTerm) return null;
-  
-  try {
-    // Chamar Edge Function do Supabase (segura - chave no backend)
-    const supabaseUrl = 'https://oqqoafejnzoolbpskbji.supabase.co';
-    const url = `${supabaseUrl}/functions/v1/get-exercise-gif`;
-    
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ exerciseId, searchTerm })
-    });
-    
-    if (!res.ok) {
-      console.warn(`GIF fetch failed for ${exerciseId}`);
-      return null;
-    }
-    
-    const data = await res.json();
-    if (data.gifUrl) {
-      gifCache[exerciseId] = data.gifUrl;
-      return data.gifUrl;
-    }
-    
-    return null;
-  } catch (e) {
-    console.warn(`Error fetching GIF for ${exerciseId}:`, e);
-    return null;
+  if (typeof GIFService !== 'undefined' && GIFService.getGif) {
+    return await GIFService.getGif(exerciseId);
   }
+  return null;
 }
 
 function buildGifBlock(gifUrl, icon, loading = false, exerciseId = null) {
