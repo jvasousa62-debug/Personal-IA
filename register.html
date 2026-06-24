@@ -640,20 +640,27 @@
 
             <div class="form-group">
                 <label for="password">Senha</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    placeholder="••••••••"
-                    minlength="8"
-                    required
-                    onkeyup="checkPasswordStrength(this.value)"
-                />
+                <div style="position: relative;">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        placeholder="••••••••"
+                        minlength="8"
+                        required
+                        onkeyup="checkPasswordStrength(this.value)"
+                        style="padding-right: 48px;"
+                    />
+                    <button type="button" aria-label="Mostrar senha" class="password-toggle" onclick="togglePassword('password', this)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:transparent; color:#e8ff00; cursor:pointer; font-size:16px; padding:4px;">
+                        🔓
+                    </button>
+                </div>
                 <div class="strength-bar">
                     <div class="strength-indicator" id="strengthIndicator"></div>
                 </div>
                 <div class="password-strength" id="passwordStrength">Força: fraca</div>
                 <div class="error-message" id="passwordError"></div>
             </div>
+
 
             <div class="form-group">
                 <label for="confirmPassword">Confirmar Senha</label>
@@ -665,13 +672,19 @@
                 />
                 <div class="error-message" id="confirmPasswordError"></div>
             </div>
-
-            <div class="terms-group">
-                <input type="checkbox" id="termsCheck" required />
-                <label for="termsCheck" style="margin: 0;">
-                    Concordo com os <a href="#" onclick="event.preventDefault()">Termos de Serviço</a> e <a href="#" onclick="event.preventDefault()">Política de Privacidade</a>
-                </label>
-            </div>
+<div class="terms-group">
+    <input type="checkbox" id="termsCheck" required />
+    <label for="termsCheck" style="margin: 0;">
+        Concordo com os
+        <a href="/legal/terms-of-use/" target="_blank" rel="noopener noreferrer">
+            Termos de Serviço
+        </a>
+        e
+        <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer">
+            Política de Privacidade
+        </a>
+    </label>
+</div>
 
             <button type="submit" class="register-btn" id="registerBtn">Criar Conta 💪</button>
         </form>
@@ -850,8 +863,23 @@
             document.getElementById('emailConfirmationModal').classList.add('show');
         }
 
+        function togglePassword(inputId, btnEl) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            if (btnEl) btnEl.textContent = isHidden ? '🔓' : '🔒';
+        }
+
+        // Garantir estado inicial do botão (opcional)
+        const __pwInput = document.getElementById('password');
+        const __pwBtn = document.querySelector("button[onclick=\"togglePassword('password', this)\"]");
+        if (__pwInput && __pwBtn) __pwBtn.textContent = '🔓';
+
+
         // Reenviar email de confirmação
         async function resendConfirmationEmail() {
+
             const email = document.getElementById('confirmationEmail').textContent;
             if (!supabaseClient) {
                 showAlert('Sistema não configurado', 'error');

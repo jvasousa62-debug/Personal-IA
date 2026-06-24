@@ -459,14 +459,21 @@
 
             <div class="form-group">
                 <label for="password">Senha</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    placeholder="••••••••"
-                    required
-                />
+                <div style="position: relative;">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        placeholder="••••••••"
+                        required
+                        style="padding-right: 48px;"
+                    />
+                    <button type="button" aria-label="Mostrar senha" class="password-toggle" onclick="togglePassword('password', this)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:transparent; color:#e8ff00; cursor:pointer; font-size:16px; padding:4px;">
+                        🔓
+                    </button>
+                </div>
                 <div class="error-message" id="passwordError"></div>
             </div>
+
 
             <button type="submit" class="login-btn" id="loginBtn">Entrar 🔓</button>
         </form>
@@ -714,7 +721,21 @@
             // window.location.href = 'forgot.html';
         }
 
+        function togglePassword(inputId, btnEl) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            if (btnEl) btnEl.textContent = isHidden ? '🔓' : '🔒';
+        }
+
+        // Garantir estado inicial do botão (opcional)
+        const __pwInput = document.getElementById('password');
+        const __pwBtn = document.querySelector("button[onclick=\"togglePassword('password', this)\"]");
+        if (__pwInput && __pwBtn) __pwBtn.textContent = '🔓';
+
         // Verificar se já está logado
+
         async function checkIfLoggedIn() {
             const loggedInLocal = localStorage.getItem('ironfit_loggedIn') === 'true';
             const userEmailLocal = localStorage.getItem('ironfit_userEmail');
