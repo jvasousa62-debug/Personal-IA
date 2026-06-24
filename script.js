@@ -1702,6 +1702,30 @@ if (supabaseUrl && supabaseKey && typeof window.supabase !== 'undefined') {
   }
 }
 
+function syncAuthenticatedUser(user) {
+  if (!user) return;
+  const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '';
+  localStorage.setItem('ironfit_userEmail', user.email || '');
+  localStorage.setItem('ironfit_userId', user.id || '');
+  localStorage.setItem('ironfit_loggedIn', 'true');
+  if (fullName) localStorage.setItem('ironfit_fullName', fullName);
+}
+
+if (supabaseClient?.auth) {
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (session?.user) {
+      syncAuthenticatedUser(session.user);
+    }
+
+    if (event === 'SIGNED_OUT') {
+      localStorage.removeItem('ironfit_userEmail');
+      localStorage.removeItem('ironfit_userId');
+      localStorage.removeItem('ironfit_loggedIn');
+      localStorage.removeItem('ironfit_fullName');
+    }
+  });
+}
+
 // ===========================
 // AUTH FUNCTIONS
 // ===========================
@@ -1811,6 +1835,7 @@ async function isUserAuthenticated() {
     if (!session?.access_token) return false;
 
     const { data: { user }, error } = await supabaseClient.auth.getUser();
+    if (user && !error) syncAuthenticatedUser(user);
     return !!user && !error;
   } catch (err) {
     console.warn('Erro ao verificar autenticação:', err?.message || err);

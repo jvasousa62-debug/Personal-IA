@@ -511,6 +511,30 @@
     <script>
         // Verificar se Supabase foi carregado
         let supabaseLib = null;
+
+        function getAuthRedirectUrl(pageName) {
+            return new URL(pageName, window.location.href).href;
+        }
+
+        function syncAuthUser(user) {
+            if (!user) return;
+            const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '';
+            localStorage.setItem('ironfit_userEmail', user.email || '');
+            localStorage.setItem('ironfit_userId', user.id || '');
+            localStorage.setItem('ironfit_loggedIn', 'true');
+            if (fullName) localStorage.setItem('ironfit_fullName', fullName);
+        }
+
+        function showAuthRedirectError() {
+            const params = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            const message = params.get('error_description') || hashParams.get('error_description') || params.get('error') || hashParams.get('error');
+
+            if (message) {
+                showAlert(decodeURIComponent(message), 'error');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
         try {
             supabaseLib = window.supabase;
             console.log('✅ Supabase JS carregado:', supabaseLib ? 'OK' : 'FALHOU');
@@ -536,7 +560,7 @@
             options: {
                 // Depois do login no Google, o Supabase redireciona para esta URL.
                 // Ajuste se o domínio de produção for diferente.
-                redirectTo: window.location.origin + '/index.html'
+                redirectTo: getAuthRedirectUrl('index.html')
             }
         });
  
@@ -717,8 +741,7 @@
         }
 
         function goToForgot() {
-            alert('Página de recuperação de senha em desenvolvimento');
-            // window.location.href = 'forgot.html';
+            window.location.href = 'forgot-password.html';
         }
 
         function togglePassword(inputId, btnEl) {
@@ -749,22 +772,11 @@
 
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session?.access_token && !loggedInLocal) {
-                    // Se a sessão Supabase ainda existe mas o estado local foi limpo,
-                    // garantimos logout completo e mostramos a tela de login.
-                    try {
-                        await supabaseClient.auth.signOut();
-                    } catch (signOutErr) {
-                        console.warn('Falha ao efetuar signOut no login check:', signOutErr);
-                    }
-                    return;
-                }
+                if (!session?.access_token) return;
 
                 const { data, error } = await supabaseClient.auth.getUser();
-                if (data && data.user) {
-                    localStorage.setItem('ironfit_userEmail', data.user.email || '');
-                    localStorage.setItem('ironfit_userId', data.user.id || '');
-                    localStorage.setItem('ironfit_loggedIn', 'true');
+                if (!error && data?.user) {
+                    syncAuthUser(data.user);
                     window.location.href = 'index.html';
                 }
             } catch (err) {
@@ -772,6 +784,7 @@
             }
         }
 
+        showAuthRedirectError();
         checkIfLoggedIn();
     </script>
 </body>
