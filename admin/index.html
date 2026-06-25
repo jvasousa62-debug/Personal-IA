@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#e8ff00" />
+  <meta name="supabase-url" content="https://oqqoafejnzoolbpskbji.supabase.co" />
+  <meta name="supabase-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcW9hZmVqbnpvb2xicHNrYmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODQ0NzYsImV4cCI6MjA5MjM2MDQ3Nn0.28ilXh_YHdf7PBCrEz4r_gA20MmeOmo7ZViNIixMJgM" />
+  <title>IRONFIT - Admin</title>
+  <link rel="icon" type="image/png" href="../icones/icon-192x192.png" />
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <a class="admin-logo" href="../index.html">IRON<span>FIT</span></a>
+      <nav class="admin-nav" aria-label="Area administrativa">
+        <a href="#overview" class="admin-nav-link active" data-admin-tab="overview">Painel</a>
+        <a href="#users" class="admin-nav-link" data-admin-tab="users">Usuarios</a>
+        <a href="#academies" class="admin-nav-link" data-admin-tab="academies">Academias</a>
+        <a href="#billing" class="admin-nav-link" data-admin-tab="billing">Faturamento</a>
+      </nav>
+      <a class="admin-back" href="../index.html">Voltar ao app</a>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-header">
+        <div>
+          <p class="admin-kicker">Area administrativa</p>
+          <h1>Painel do dono</h1>
+        </div>
+        <div class="admin-header-actions">
+          <button class="admin-icon-btn" id="refreshAdminBtn" type="button" title="Atualizar dados" aria-label="Atualizar dados">↻</button>
+          <button class="admin-primary-btn" id="newAcademyBtn" type="button">Nova academia</button>
+        </div>
+      </header>
+
+      <section class="admin-alert hidden" id="adminAlert" role="status"></section>
+
+      <section class="admin-loading" id="adminLoading">
+        <div class="admin-spinner"></div>
+        <p>Carregando painel administrativo...</p>
+      </section>
+
+      <section class="admin-denied hidden" id="adminDenied">
+        <h2>Acesso restrito</h2>
+        <p>Entre com uma conta marcada como admin em <code>user_profiles.role</code>.</p>
+        <a href="../login.html">Ir para login</a>
+      </section>
+
+      <div id="adminContent" class="hidden">
+        <section class="admin-tab active" id="admin-tab-overview">
+          <div class="admin-metrics" id="adminMetrics"></div>
+          <div class="admin-grid two">
+            <article class="admin-panel">
+              <div class="admin-panel-head">
+                <h2>Academias que mais usam</h2>
+              </div>
+              <div class="admin-usage-list" id="topAcademies"></div>
+            </article>
+            <article class="admin-panel">
+              <div class="admin-panel-head">
+                <h2>Resumo financeiro</h2>
+              </div>
+              <div class="admin-finance-list" id="financeSummary"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="admin-tab" id="admin-tab-users">
+          <div class="admin-panel">
+            <div class="admin-panel-head stacked">
+              <div>
+                <h2>Gerenciar usuarios</h2>
+                <p>Bloquear, excluir, mudar plano e transformar usuarios em admin.</p>
+              </div>
+              <input class="admin-search" id="userSearch" type="search" placeholder="Buscar usuario..." />
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Academia</th>
+                    <th>Plano</th>
+                    <th>Status</th>
+                    <th>Papel</th>
+                    <th>Acoes</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-tab" id="admin-tab-academies">
+          <div class="admin-panel">
+            <div class="admin-panel-head stacked">
+              <div>
+                <h2>Gerenciar academias</h2>
+                <p>Criar, editar, suspender, aumentar limite e gerar codigos.</p>
+              </div>
+              <input class="admin-search" id="academySearch" type="search" placeholder="Buscar academia..." />
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Academia</th>
+                    <th>Codigo</th>
+                    <th>Alunos</th>
+                    <th>Validade</th>
+                    <th>Status</th>
+                    <th>Acoes</th>
+                  </tr>
+                </thead>
+                <tbody id="academiesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-tab" id="admin-tab-billing">
+          <div class="admin-grid two">
+            <article class="admin-panel">
+              <div class="admin-panel-head">
+                <h2>Assinaturas</h2>
+              </div>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Academia</th>
+                      <th>Plano</th>
+                      <th>Status</th>
+                      <th>Mensal</th>
+                    </tr>
+                  </thead>
+                  <tbody id="subscriptionsTableBody"></tbody>
+                </table>
+              </div>
+            </article>
+            <article class="admin-panel">
+              <div class="admin-panel-head">
+                <h2>Receita</h2>
+              </div>
+              <div class="admin-revenue-cards" id="revenueCards"></div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="admin-modal hidden" id="academyModal" role="dialog" aria-modal="true" aria-labelledby="academyModalTitle">
+    <div class="admin-modal-backdrop" id="academyModalBackdrop"></div>
+    <form class="admin-modal-box" id="academyForm">
+      <div class="admin-modal-head">
+        <h2 id="academyModalTitle">Nova academia</h2>
+        <button type="button" class="admin-icon-btn" id="closeAcademyModal" aria-label="Fechar">×</button>
+      </div>
+      <input type="hidden" id="academyId" />
+      <label>Nome
+        <input class="admin-input" id="academyName" required placeholder="Power Gym" />
+      </label>
+      <label>Codigo de acesso
+        <div class="admin-inline">
+          <input class="admin-input" id="academyCode" required placeholder="POWER2026" />
+          <button class="admin-secondary-btn" type="button" id="generateCodeBtn">Gerar</button>
+        </div>
+      </label>
+      <div class="admin-form-grid">
+        <label>Limite de alunos
+          <input class="admin-input" id="academyLimit" type="number" min="0" required value="300" />
+        </label>
+        <label>Validade em meses
+          <input class="admin-input" id="academyMonths" type="number" min="1" required value="12" />
+        </label>
+      </div>
+      <label>Valido ate
+        <input class="admin-input" id="academyExpires" type="date" />
+      </label>
+      <label>Status
+        <select class="admin-input" id="academyStatus">
+          <option value="active">Ativa</option>
+          <option value="suspended">Suspensa</option>
+          <option value="expired">Expirada</option>
+        </select>
+      </label>
+      <div class="admin-modal-actions">
+        <button class="admin-secondary-btn" type="button" id="cancelAcademyForm">Cancelar</button>
+        <button class="admin-primary-btn" type="submit">Salvar academia</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.5/dist/umd/supabase.js"></script>
+  <script src="../src/config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

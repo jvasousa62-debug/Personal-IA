@@ -1,0 +1,508 @@
+(function () {
+  const state = {
+    client: null,
+    user: null,
+    profile: null,
+    users: [],
+    academies: [],
+    subscriptions: [],
+    messages: []
+  };
+
+  const $ = (selector) => document.querySelector(selector);
+  const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+  const dateFmt = new Intl.DateTimeFormat('pt-BR');
+
+  function initSupabaseClient() {
+    const config = window.IronFitConfig?.SUPABASE_CONFIG;
+    const url = config?.url || document.querySelector('meta[name="supabase-url"]')?.content;
+    const key = config?.key || document.querySelector('meta[name="supabase-key"]')?.content;
+
+    if (!url || !key || !window.supabase) return null;
+    return window.supabase.createClient(url, key);
+  }
+
+  function showAlert(message, type = 'info') {
+    const alert = $('#adminAlert');
+    if (!alert) return;
+    alert.textContent = message;
+    alert.className = `admin-alert ${type}`;
+    window.clearTimeout(showAlert.timer);
+    showAlert.timer = window.setTimeout(() => alert.classList.add('hidden'), 4800);
+  }
+
+  function setLoading(isLoading) {
+    $('#adminLoading')?.classList.toggle('hidden', !isLoading);
+    $('#adminContent')?.classList.toggle('hidden', isLoading);
+  }
+
+  function denyAccess(message) {
+    setLoading(false);
+    $('#adminContent')?.classList.add('hidden');
+    const denied = $('#adminDenied');
+    if (denied) {
+      denied.classList.remove('hidden');
+      denied.querySelector('p').textContent = message;
+    }
+  }
+
+  function statusLabel(status) {
+    const labels = {
+      active: 'Ativo',
+      blocked: 'Bloqueado',
+      deleted: 'Excluido',
+      suspended: 'Suspensa',
+      expired: 'Expirada',
+      canceled: 'Cancelada',
+      past_due: 'Pendente'
+    };
+    return labels[status] || status || '-';
+  }
+
+  function planLabel(plan) {
+    const labels = {
+      free: 'Free',
+      basic: 'Basic',
+      pro: 'Pro',
+      enterprise: 'Enterprise'
+    };
+    return labels[plan] || plan || '-';
+  }
+
+  function academyById(id) {
+    return state.academies.find((academy) => academy.id === id);
+  }
+
+  function getStudentCount(academyId) {
+    return state.users.filter((user) => user.academy_id === academyId && user.account_status !== 'deleted').length;
+  }
+
+  function formatDate(value) {
+    if (!value) return '-';
+    try {
+      return dateFmt.format(new Date(value));
+    } catch (error) {
+      return '-';
+    }
+  }
+
+  async function loadAdmin() {
+    setLoading(true);
+    $('#adminDenied')?.classList.add('hidden');
+
+    state.client = initSupabaseClient();
+    if (!state.client) {
+      denyAccess('Supabase nao esta configurado nesta pagina.');
+      return;
+    }
+
+    const { data: userData, error: userError } = await state.client.auth.getUser();
+    if (userError || !userData?.user) {
+      denyAccess('Faca login antes de abrir a area administrativa.');
+      return;
+    }
+
+    state.user = userData.user;
+
+    const { data: profile, error: profileError } = await state.client
+      .from('user_profiles')
+      .select('user_id,email,full_name,role,account_status')
+      .eq('user_id', state.user.id)
+      .maybeSingle();
+
+    if (profileError || profile?.role !== 'admin' || profile?.account_status !== 'active') {
+      denyAccess('Sua conta ainda nao tem permissao de admin.');
+      return;
+    }
+
+    state.profile = profile;
+    await refreshData();
+  }
+
+  async function refreshData() {
+    setLoading(true);
+
+    const [usersResult, academiesResult, subscriptionsResult, messagesResult] = await Promise.all([
+      state.client
+        .from('user_profiles')
+        .select('id,user_id,email,full_name,role,account_status,plan,academy_id,created_at,last_seen_at')
+        .order('created_at', { ascending: false }),
+      state.client
+        .from('academies')
+        .select('id,name,legal_name,email,phone,status,access_code,student_limit,validity_months,expires_at,created_at')
+        .order('created_at', { ascending: false }),
+      state.client
+        .from('subscriptions')
+        .select('id,academy_id,user_id,status,plan,monthly_amount,started_at,canceled_at')
+        .order('created_at', { ascending: false }),
+      state.client
+        .from('chat_messages')
+        .select('id,user_id,created_at')
+        .order('created_at', { ascending: false })
+        .limit(1000)
+    ]);
+
+    const firstError = usersResult.error || academiesResult.error || subscriptionsResult.error;
+    if (firstError) {
+      denyAccess(`Nao foi possivel carregar o admin: ${firstError.message}`);
+      return;
+    }
+
+    state.users = usersResult.data || [];
+    state.academies = academiesResult.data || [];
+    state.subscriptions = subscriptionsResult.data || [];
+    state.messages = messagesResult.data || [];
+
+    renderAll();
+    setLoading(false);
+  }
+
+  function renderAll() {
+    renderMetrics();
+    renderUsers();
+    renderAcademies();
+    renderBilling();
+    renderTopAcademies();
+  }
+
+  function renderMetrics() {
+    const activeUsers = state.users.filter((u) => u.account_status === 'active').length;
+    const blockedUsers = state.users.filter((u) => u.account_status === 'blocked').length;
+    const activeAcademies = state.academies.filter((a) => a.status === 'active').length;
+    const activeSubs = state.subscriptions.filter((s) => s.status === 'active');
+    const monthly = activeSubs.reduce((sum, sub) => sum + Number(sub.monthly_amount || 0), 0);
+
+    const metrics = [
+      ['Usuarios ativos', activeUsers, `${blockedUsers} bloqueados`],
+      ['Academias ativas', activeAcademies, `${state.academies.length} cadastradas`],
+      ['Assinaturas ativas', activeSubs.length, `${state.subscriptions.filter((s) => s.status === 'canceled').length} canceladas`],
+      ['Receita mensal', money.format(monthly), `${money.format(monthly * 12)} ao ano`]
+    ];
+
+    $('#adminMetrics').innerHTML = metrics.map(([label, value, note]) => `
+      <article class="admin-metric">
+        <div class="admin-metric-label">${label}</div>
+        <div class="admin-metric-value">${value}</div>
+        <div class="admin-metric-note">${note}</div>
+      </article>
+    `).join('');
+  }
+
+  function renderUsers() {
+    const query = ($('#userSearch')?.value || '').toLowerCase();
+    const users = state.users.filter((user) => {
+      const text = `${user.full_name || ''} ${user.email || ''}`.toLowerCase();
+      return text.includes(query);
+    });
+
+    $('#usersTableBody').innerHTML = users.map((user) => {
+      const academyOptions = ['<option value="">Sem academia</option>'].concat(
+        state.academies.map((academy) => `<option value="${academy.id}" ${academy.id === user.academy_id ? 'selected' : ''}>${academy.name}</option>`)
+      ).join('');
+      const academy = academyById(user.academy_id);
+
+      return `
+        <tr data-user-id="${user.user_id}">
+          <td>
+            <div class="admin-user-name">${user.full_name || user.email || 'Usuario sem nome'}</div>
+            <div class="admin-muted">${user.email || user.user_id}</div>
+          </td>
+          <td>
+            <select class="admin-select" data-field="academy_id">${academyOptions}</select>
+            <div class="admin-muted">${academy?.access_code || ''}</div>
+          </td>
+          <td>
+            <select class="admin-select" data-field="plan">
+              ${['free', 'basic', 'pro', 'enterprise'].map((plan) => `<option value="${plan}" ${plan === user.plan ? 'selected' : ''}>${planLabel(plan)}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <select class="admin-select" data-field="account_status">
+              ${['active', 'blocked', 'deleted'].map((status) => `<option value="${status}" ${status === user.account_status ? 'selected' : ''}>${statusLabel(status)}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <select class="admin-select" data-field="role">
+              ${['member', 'admin'].map((role) => `<option value="${role}" ${role === user.role ? 'selected' : ''}>${role === 'admin' ? 'Admin' : 'Aluno'}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <div class="admin-actions">
+              <button class="admin-secondary-btn" type="button" data-action="save-user">Salvar</button>
+              <button class="admin-secondary-btn" type="button" data-action="toggle-block">${user.account_status === 'blocked' ? 'Desbloquear' : 'Bloquear'}</button>
+              <button class="admin-danger-btn" type="button" data-action="delete-user">Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="6">Nenhum usuario encontrado.</td></tr>`;
+  }
+
+  function renderAcademies() {
+    const query = ($('#academySearch')?.value || '').toLowerCase();
+    const academies = state.academies.filter((academy) => {
+      const text = `${academy.name || ''} ${academy.access_code || ''}`.toLowerCase();
+      return text.includes(query);
+    });
+
+    $('#academiesTableBody').innerHTML = academies.map((academy) => {
+      const students = getStudentCount(academy.id);
+      return `
+        <tr data-academy-id="${academy.id}">
+          <td>
+            <div class="admin-academy-name">${academy.name}</div>
+            <div class="admin-muted">Criada em ${formatDate(academy.created_at)}</div>
+          </td>
+          <td><strong>${academy.access_code}</strong></td>
+          <td>${students} / ${academy.student_limit}</td>
+          <td>${academy.validity_months} meses<br><span class="admin-muted">${formatDate(academy.expires_at)}</span></td>
+          <td><span class="admin-status ${academy.status}">${statusLabel(academy.status)}</span></td>
+          <td>
+            <div class="admin-actions">
+              <button class="admin-secondary-btn" type="button" data-action="edit-academy">Editar</button>
+              <button class="admin-secondary-btn" type="button" data-action="toggle-academy">${academy.status === 'suspended' ? 'Reativar' : 'Suspender'}</button>
+              <button class="admin-secondary-btn" type="button" data-action="increase-limit">+50 alunos</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="6">Nenhuma academia cadastrada.</td></tr>`;
+  }
+
+  function renderBilling() {
+    $('#subscriptionsTableBody').innerHTML = state.subscriptions.map((sub) => {
+      const academy = academyById(sub.academy_id);
+      return `
+        <tr>
+          <td>${academy?.name || 'Sem academia'}</td>
+          <td>${planLabel(sub.plan)}</td>
+          <td><span class="admin-status ${sub.status}">${statusLabel(sub.status)}</span></td>
+          <td>${money.format(Number(sub.monthly_amount || 0))}</td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="4">Nenhuma assinatura cadastrada.</td></tr>`;
+
+    const active = state.subscriptions.filter((sub) => sub.status === 'active');
+    const canceled = state.subscriptions.filter((sub) => sub.status === 'canceled');
+    const monthly = active.reduce((sum, sub) => sum + Number(sub.monthly_amount || 0), 0);
+    const values = [
+      ['Assinaturas ativas', active.length],
+      ['Assinaturas canceladas', canceled.length],
+      ['Receita mensal', money.format(monthly)],
+      ['Receita anual', money.format(monthly * 12)]
+    ];
+
+    $('#revenueCards').innerHTML = values.map(([label, value]) => `
+      <div class="admin-revenue-card">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </div>
+    `).join('');
+
+    $('#financeSummary').innerHTML = values.map(([label, value]) => `
+      <div class="admin-finance-row">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </div>
+    `).join('');
+  }
+
+  function renderTopAcademies() {
+    const usageByAcademy = new Map();
+    state.messages.forEach((message) => {
+      const user = state.users.find((item) => item.user_id === message.user_id);
+      if (!user?.academy_id) return;
+      usageByAcademy.set(user.academy_id, (usageByAcademy.get(user.academy_id) || 0) + 1);
+    });
+
+    const rows = state.academies
+      .map((academy) => {
+        const students = getStudentCount(academy.id);
+        const messages = usageByAcademy.get(academy.id) || 0;
+        return { academy, students, messages, score: students * 2 + messages };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+
+    const max = Math.max(...rows.map((row) => row.score), 1);
+    $('#topAcademies').innerHTML = rows.map((row) => `
+      <div class="admin-usage-row">
+        <div>
+          <strong>${row.academy.name}</strong>
+          <div class="admin-usage-meta">${row.students} alunos · ${row.messages} mensagens IA</div>
+          <div class="admin-usage-bar"><span style="width:${Math.max(8, (row.score / max) * 100)}%"></span></div>
+        </div>
+        <span class="admin-status ${row.academy.status}">${statusLabel(row.academy.status)}</span>
+      </div>
+    `).join('') || '<p class="admin-muted">Sem uso registrado ainda.</p>';
+  }
+
+  async function updateUser(row, patch) {
+    const userId = row.dataset.userId;
+    const { error } = await state.client
+      .from('user_profiles')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+
+    if (error) {
+      showAlert(`Erro ao salvar usuario: ${error.message}`, 'error');
+      return;
+    }
+
+    showAlert('Usuario atualizado.');
+    await refreshData();
+  }
+
+  function collectUserPatch(row) {
+    const patch = {};
+    row.querySelectorAll('[data-field]').forEach((field) => {
+      patch[field.dataset.field] = field.value || null;
+    });
+    if (patch.account_status === 'blocked') patch.blocked_at = new Date().toISOString();
+    if (patch.account_status === 'deleted') patch.deleted_at = new Date().toISOString();
+    return patch;
+  }
+
+  async function saveAcademy(event) {
+    event.preventDefault();
+    const id = $('#academyId').value;
+    const expires = $('#academyExpires').value;
+    const payload = {
+      name: $('#academyName').value.trim(),
+      access_code: $('#academyCode').value.trim().toUpperCase(),
+      student_limit: Number($('#academyLimit').value || 0),
+      validity_months: Number($('#academyMonths').value || 12),
+      expires_at: expires ? new Date(`${expires}T23:59:59`).toISOString() : null,
+      status: $('#academyStatus').value,
+      updated_at: new Date().toISOString()
+    };
+
+    const request = id
+      ? state.client.from('academies').update(payload).eq('id', id)
+      : state.client.from('academies').insert(payload);
+
+    const { error } = await request;
+    if (error) {
+      showAlert(`Erro ao salvar academia: ${error.message}`, 'error');
+      return;
+    }
+
+    closeAcademyModal();
+    showAlert('Academia salva.');
+    await refreshData();
+  }
+
+  function openAcademyModal(academy) {
+    $('#academyModalTitle').textContent = academy ? 'Editar academia' : 'Nova academia';
+    $('#academyId').value = academy?.id || '';
+    $('#academyName').value = academy?.name || '';
+    $('#academyCode').value = academy?.access_code || '';
+    $('#academyLimit').value = academy?.student_limit || 300;
+    $('#academyMonths').value = academy?.validity_months || 12;
+    $('#academyExpires').value = academy?.expires_at ? academy.expires_at.slice(0, 10) : '';
+    $('#academyStatus').value = academy?.status || 'active';
+    $('#academyModal').classList.remove('hidden');
+  }
+
+  function closeAcademyModal() {
+    $('#academyModal').classList.add('hidden');
+    $('#academyForm').reset();
+    $('#academyId').value = '';
+  }
+
+  function generateCode() {
+    const name = $('#academyName').value || 'Academia';
+    const prefix = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .slice(0, 6)
+      .toUpperCase() || 'GYM';
+    $('#academyCode').value = `${prefix}${new Date().getFullYear()}`;
+  }
+
+  function bindEvents() {
+    document.querySelectorAll('[data-admin-tab]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const tab = link.dataset.adminTab;
+        document.querySelectorAll('[data-admin-tab]').forEach((item) => item.classList.remove('active'));
+        document.querySelectorAll('.admin-tab').forEach((item) => item.classList.remove('active'));
+        link.classList.add('active');
+        $(`#admin-tab-${tab}`)?.classList.add('active');
+      });
+    });
+
+    $('#refreshAdminBtn')?.addEventListener('click', refreshData);
+    $('#newAcademyBtn')?.addEventListener('click', () => openAcademyModal());
+    $('#academyForm')?.addEventListener('submit', saveAcademy);
+    $('#closeAcademyModal')?.addEventListener('click', closeAcademyModal);
+    $('#cancelAcademyForm')?.addEventListener('click', closeAcademyModal);
+    $('#academyModalBackdrop')?.addEventListener('click', closeAcademyModal);
+    $('#generateCodeBtn')?.addEventListener('click', generateCode);
+    $('#userSearch')?.addEventListener('input', renderUsers);
+    $('#academySearch')?.addEventListener('input', renderAcademies);
+
+    $('#usersTableBody')?.addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const row = button.closest('tr');
+      const action = button.dataset.action;
+
+      if (action === 'save-user') {
+        await updateUser(row, collectUserPatch(row));
+      }
+
+      if (action === 'toggle-block') {
+        const current = row.querySelector('[data-field="account_status"]').value;
+        await updateUser(row, {
+          account_status: current === 'blocked' ? 'active' : 'blocked',
+          blocked_at: current === 'blocked' ? null : new Date().toISOString()
+        });
+      }
+
+      if (action === 'delete-user') {
+        const ok = window.confirm('Excluir este usuario do app? A conta de autenticacao permanece no Supabase Auth.');
+        if (ok) {
+          await updateUser(row, { account_status: 'deleted', deleted_at: new Date().toISOString() });
+        }
+      }
+    });
+
+    $('#academiesTableBody')?.addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const row = button.closest('tr');
+      const academy = state.academies.find((item) => item.id === row.dataset.academyId);
+      if (!academy) return;
+
+      if (button.dataset.action === 'edit-academy') {
+        openAcademyModal(academy);
+      }
+
+      if (button.dataset.action === 'toggle-academy') {
+        const nextStatus = academy.status === 'suspended' ? 'active' : 'suspended';
+        const { error } = await state.client.from('academies').update({ status: nextStatus, updated_at: new Date().toISOString() }).eq('id', academy.id);
+        if (error) showAlert(`Erro ao alterar academia: ${error.message}`, 'error');
+        else {
+          showAlert('Status da academia atualizado.');
+          await refreshData();
+        }
+      }
+
+      if (button.dataset.action === 'increase-limit') {
+        const { error } = await state.client.from('academies').update({ student_limit: Number(academy.student_limit || 0) + 50, updated_at: new Date().toISOString() }).eq('id', academy.id);
+        if (error) showAlert(`Erro ao aumentar limite: ${error.message}`, 'error');
+        else {
+          showAlert('Limite aumentado em 50 alunos.');
+          await refreshData();
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    bindEvents();
+    loadAdmin();
+  });
+})();

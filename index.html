@@ -66,6 +66,10 @@
           <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2l-.18 1.2a2 2 0 0 1-1 1.45l-1.1.62a2 2 0 0 0-.73 2.73l.6 1a2 2 0 0 1 0 2l-.6 1a2 2 0 0 0 .73 2.73l1.1.62a2 2 0 0 1 1 1.45l.18 1.2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2l.18-1.2a2 2 0 0 1 1-1.45l1.1-.62a2 2 0 0 0 .73-2.73l-.6-1a2 2 0 0 1 0-2l.6-1a2 2 0 0 0-.73-2.73l-1.1-.62a2 2 0 0 1-1-1.45L14.22 4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
           <span>Preferências</span>
         </li>
+        <li class="nav-item hidden" id="adminNavItem" data-page="admin" onclick="openAdmin()">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v6c0 5 3.4 8 8 8s8-3 8-8V7l-8-4z"></path><path d="M9 12l2 2 4-4"></path></svg></span>
+          <span>Admin</span>
+        </li>
       </ul>
       <div class="sidebar-footer" id="sidebarUser" onclick="toggleUserMenu()" style="cursor: pointer;">
         <div class="user-avatar" id="userAvatar">💪</div>
@@ -81,6 +85,7 @@
         <hr class="user-menu-divider">
         <div class="user-menu-item" onclick="openSettings()">⚙️ Preferências</div>
         <div class="user-menu-item" onclick="openProfile()">👤 Meu Perfil</div>
+        <div class="user-menu-item hidden" id="adminMenuItem" onclick="openAdmin()">Admin</div>
         <hr class="user-menu-divider">
         <div class="user-menu-item logout" id="logoutButton">🔓 Desconectar</div>
       </div>
@@ -104,6 +109,7 @@
           <li class="mnav-item" data-page="progress">Progresso</li>
           <li class="mnav-item" data-page="profile" onclick="openProfile()">Perfil</li>
           <li class="mnav-item" data-page="settings" onclick="openSettings()">Preferências</li>
+          <li class="mnav-item hidden" id="adminMobileNavItem" data-page="admin" onclick="openAdmin()">Admin</li>
         </ul>
       </div>
     </div>

@@ -19,8 +19,15 @@ function openProfile() {
   window.location.assign('profile.html');
 }
 
+function openAdmin() {
+  document.getElementById('userMenu')?.classList.add('hidden');
+  document.getElementById('mobileOverlay')?.classList.remove('show');
+  window.location.assign('admin/');
+}
+
 window.openSettings = openSettings;
 window.openProfile = openProfile;
+window.openAdmin = openAdmin;
 
 // ===========================
 // DATA: EXERCISES DATABASE
@@ -401,6 +408,7 @@ function setupNavigation() {
     if (!pageId) return;
     if (pageId === 'profile') { openProfile(); return; }
     if (pageId === 'settings') { openSettings(); return; }
+    if (pageId === 'admin') { openAdmin(); return; }
     pages.forEach(p => p.classList.remove('active'));
     const target = document.getElementById('page-' + pageId);
     if (target) target.classList.add('active');
@@ -1726,6 +1734,51 @@ if (supabaseClient?.auth) {
   });
 }
 
+function setAdminNavigationVisible(isVisible) {
+  ['adminNavItem', 'adminMenuItem', 'adminMobileNavItem'].forEach((id) => {
+    document.getElementById(id)?.classList.toggle('hidden', !isVisible);
+  });
+}
+
+async function getAccessProfile(userId) {
+  if (!supabaseClient?.from || !userId) return null;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('user_profiles')
+      .select('full_name,role,account_status')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Nao foi possivel verificar permissao do usuario:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.warn('Erro ao verificar perfil de acesso:', error?.message || error);
+    return null;
+  }
+}
+
+async function applyAccessProfile(user) {
+  const profile = await getAccessProfile(user?.id);
+  const status = profile?.account_status;
+
+  setAdminNavigationVisible(profile?.role === 'admin' && status === 'active');
+
+  if (status === 'blocked' || status === 'deleted') {
+    alert(status === 'blocked'
+      ? 'Sua conta esta bloqueada. Fale com o administrador.'
+      : 'Sua conta foi removida do app. Fale com o administrador.');
+    await handleLogout();
+    return false;
+  }
+
+  return profile || true;
+}
+
 // ===========================
 // AUTH FUNCTIONS
 // ===========================
@@ -1765,7 +1818,8 @@ async function loadUserData() {
     } catch (e) { return fallback; }
   }
 
-  if (isLoggedInLocal && userEmail) {
+  if (isLoggedInLocal && userEmail && !supabaseClient) {
+    setAdminNavigationVisible(false);
     const name = resolveProfileName(userEmail.split('@')[0]);
     applyUserToUI(name, userEmail, localStorage.getItem('ironfit_avatar'));
     return;
@@ -1782,12 +1836,16 @@ async function loadUserData() {
   try {
     const { data: { user }, error } = await supabaseClient.auth.getUser();
     if (error || !user) {
+      setAdminNavigationVisible(false);
       const fallbackEmail = userEmail || 'offline@ironfit.local';
       const name = resolveProfileName('Usuário');
       applyUserToUI(name, fallbackEmail, localStorage.getItem('ironfit_avatar'));
       return;
     }
-    const name = resolveProfileName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário');
+    const accessProfile = await applyAccessProfile(user);
+    if (!accessProfile) return;
+    const profileName = accessProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
+    const name = resolveProfileName(profileName);
     applyUserToUI(name, user.email, localStorage.getItem('ironfit_avatar'));
   } catch (err) {
     console.warn('Nao foi possivel carregar usuario do Supabase:', err.message);
@@ -1835,8 +1893,12 @@ async function isUserAuthenticated() {
     if (!session?.access_token) return false;
 
     const { data: { user }, error } = await supabaseClient.auth.getUser();
-    if (user && !error) syncAuthenticatedUser(user);
-    return !!user && !error;
+    if (user && !error) {
+      syncAuthenticatedUser(user);
+      return await applyAccessProfile(user);
+    }
+    setAdminNavigationVisible(false);
+    return false;
   } catch (err) {
     console.warn('Erro ao verificar autenticação:', err?.message || err);
     return false;

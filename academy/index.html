@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#e8ff00" />
+  <meta name="supabase-url" content="https://oqqoafejnzoolbpskbji.supabase.co" />
+  <meta name="supabase-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXJhYmFzZSIsInJlZiI6Im9xcW9hZmVqbnpvb2xicHNrYmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODQ0NzYsImV4cCI6MjA5MjM2MDQ3Nn0.28ilXh_YHdf7PBCrEz4r_gA20MmeOmo7ZViNIixMJgM" />
+  <title>IRONFIT - Academia</title>
+  <link rel="icon" type="image/png" href="../icones/icon-192x192.png" />
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="academy.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="academy-body">
+  <div class="academy-shell">
+    <aside class="academy-sidebar">
+      <a class="academy-logo" href="../index.html">IRON<span>FIT</span></a>
+      <nav class="academy-nav" aria-label="Area do dono">
+        <a href="#students" class="academy-nav-link active" data-academy-tab="students">Alunos</a>
+        <a href="#reports" class="academy-nav-link" data-academy-tab="reports">Relatorios</a>
+        <a href="#plan" class="academy-nav-link" data-academy-tab="plan">Plano</a>
+        <a href="#growth" class="academy-nav-link" data-academy-tab="growth">Codigo</a>
+      </nav>
+      <a class="academy-back" href="../index.html">Voltar ao app</a>
+    </aside>
+
+    <main class="academy-main">
+      <header class="academy-header">
+        <div>
+          <p class="academy-kicker">Area do dono da academia</p>
+          <h1 id="academyTitle">Minha academia</h1>
+        </div>
+        <button class="academy-icon-btn" id="refreshAcademyBtn" type="button" title="Atualizar dados" aria-label="Atualizar dados">↻</button>
+      </header>
+
+      <section class="academy-alert hidden" id="academyAlert" role="status"></section>
+
+      <section class="academy-loading" id="academyLoading">
+        <div class="academy-spinner"></div>
+        <p>Carregando area da academia...</p>
+      </section>
+
+      <section class="academy-denied hidden" id="academyDenied">
+        <h2>Acesso restrito</h2>
+        <p>Entre com uma conta vinculada como dono da academia.</p>
+        <a href="../login.html">Ir para login</a>
+      </section>
+
+      <div id="academyContent" class="hidden">
+        <section class="academy-tab active" id="academy-tab-students">
+          <div class="academy-metrics" id="studentMetrics"></div>
+          <article class="academy-panel">
+            <div class="academy-panel-head stacked">
+              <div>
+                <h2>Gerenciar alunos</h2>
+                <p>Veja todos os alunos vinculados, ultimo acesso e status.</p>
+              </div>
+              <input class="academy-search" id="studentSearch" type="search" placeholder="Buscar aluno..." />
+            </div>
+            <div class="academy-table-wrap">
+              <table class="academy-table">
+                <thead>
+                  <tr>
+                    <th>Aluno</th>
+                    <th>Status</th>
+                    <th>Ultimo acesso</th>
+                    <th>Plano</th>
+                    <th>Acoes</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="academy-tab" id="academy-tab-reports">
+          <div class="academy-metrics" id="reportMetrics"></div>
+          <div class="academy-grid two">
+            <article class="academy-panel">
+              <div class="academy-panel-head">
+                <h2>Alunos mais engajados</h2>
+              </div>
+              <div class="academy-list" id="engagedStudents"></div>
+            </article>
+            <article class="academy-panel">
+              <div class="academy-panel-head">
+                <h2>Sem acessar ha 7+ dias</h2>
+              </div>
+              <div class="academy-list" id="inactiveStudents"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="academy-tab" id="academy-tab-plan">
+          <div class="academy-grid two">
+            <article class="academy-panel">
+              <div class="academy-panel-head">
+                <h2>Controle do plano</h2>
+              </div>
+              <div class="academy-plan-card" id="planCard"></div>
+              <div class="academy-actions">
+                <button class="academy-primary-btn" type="button" data-plan-action="renew">Renovar plano</button>
+                <button class="academy-secondary-btn" type="button" data-plan-action="upgrade">Fazer upgrade</button>
+                <button class="academy-danger-btn" type="button" data-plan-action="cancel">Cancelar</button>
+              </div>
+            </article>
+            <article class="academy-panel">
+              <div class="academy-panel-head">
+                <h2>Uso do limite</h2>
+              </div>
+              <div class="academy-limit" id="limitUsage"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="academy-tab" id="academy-tab-growth">
+          <article class="academy-code-panel">
+            <p class="academy-kicker">Codigo da academia</p>
+            <h2 id="growthAcademyName">Academia</h2>
+            <div class="academy-code-box">
+              <span id="academyCode">POWER2026</span>
+              <button class="academy-primary-btn" id="copyCodeBtn" type="button">Copiar</button>
+            </div>
+            <p class="academy-muted">O aluno digita esse codigo no cadastro para entrar na sua academia.</p>
+          </article>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.5/dist/umd/supabase.js"></script>
+  <script src="../src/config.js"></script>
+  <script src="academy.js"></script>
+</body>
+</html>
