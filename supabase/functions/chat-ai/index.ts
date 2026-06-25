@@ -70,30 +70,10 @@ function getEnv(name: string, fallback = '') {
 }
 
 // ===========================
-// DETECÇÃO DE GRUPOS MUSCULARES MÚLTIPLOS
-// Resolve o bug central: "treino de peito e tríceps" só respondendo peito.
+// ROTEAMENTO DE DIFICULDADE
+// Apenas decide qual modelo usar (rapido vs. raciocinio), nunca decide
+// "se" a IA deve responder. Tudo que o usuario perguntar deve ir para a IA.
 // ===========================
-const MUSCLE_GROUP_PATTERNS: Record<string, string[]> = {
-  peito: ['peito', 'peitoral', 'supino'],
-  costas: ['costas', 'dorsal', 'remada', 'puxada', 'dorsais'],
-  pernas: ['perna', 'pernas', 'quadriceps', 'quadríceps', 'agachamento', 'gluteo', 'glúteo', 'posterior de coxa', 'panturrilha'],
-  ombro: ['ombro', 'ombros', 'deltoide', 'deltóide', 'desenvolvimento'],
-  biceps: ['biceps', 'bíceps', 'rosca'],
-  triceps: ['triceps', 'tríceps'],
-  abdomen: ['abdomen', 'abdômen', 'abdominal', 'core', 'prancha'],
-};
-
-function detectMuscleGroups(message: string): string[] {
-  const text = normalizeText(message);
-  const found: string[] = [];
-  for (const [group, patterns] of Object.entries(MUSCLE_GROUP_PATTERNS)) {
-    if (patterns.some((p) => text.includes(normalizeText(p)))) {
-      found.push(group);
-    }
-  }
-  return found;
-}
-
 function scoreQuestion(message: string, history: ChatMessage[]) {
   const text = normalizeText(message);
   let score = 0;
@@ -126,12 +106,6 @@ function scoreQuestion(message: string, history: ChatMessage[]) {
 
   if (text.includes('?') && text.split(' ').length <= 12) score -= 1;
 
-  // CORREÇÃO CRÍTICA: pedido de treino com 2+ grupos musculares é sempre complexo.
-  // Antes, "treino de peito e triceps" podia cair como 'simple' e ir pro modelo
-  // mais fraco, que então ignorava metade do pedido.
-  const muscleGroups = detectMuscleGroups(message);
-  if (muscleGroups.length >= 2) score += 4;
-
   if (score >= 5) return { difficulty: 'complex' as const, score };
   if (score <= 1) return { difficulty: 'simple' as const, score };
   return { difficulty: 'standard' as const, score };
@@ -161,95 +135,74 @@ function routeQuestion(message: string, history: ChatMessage[], openaiKey: strin
   const provider = pickConfiguredProvider(preferred, openaiKey, anthropicKey);
   if (!provider) return null;
 
-  // MODELOS ATUALIZADOS (jun/2026).
-  // claude-3-haiku-20240307 estava DEPRECADO — uma das causas raiz das respostas ruins.
-  // Agora simple/standard/complex todos usam Sonnet 4.6 por padrão (bom equilíbrio
-  // custo/qualidade), com Haiku 4.5 como opção mais barata só se você setar
-  // ANTHROPIC_SIMPLE_MODEL explicitamente.
+  // IMPORTANTE: "claude-3-haiku-20240307" e modelos antigos podem ser
+  // descontinuados e retornar erro 404/400 silenciosamente, fazendo o
+  // app sempre cair no fallback local. Mantenha este valor atualizado
+  // conforme a documentacao da Anthropic/OpenAI.
   const model =
     provider === 'openai'
       ? difficulty === 'complex'
         ? getEnv('OPENAI_REASONING_MODEL', 'gpt-5')
         : getEnv('OPENAI_FAST_MODEL', 'gpt-5-mini')
-      : difficulty === 'simple'
-        ? getEnv('ANTHROPIC_SIMPLE_MODEL', getEnv('ANTHROPIC_MODEL', 'claude-sonnet-4-6'))
-        : getEnv('ANTHROPIC_MODEL', 'claude-sonnet-4-6');
+      : difficulty === 'complex'
+        ? getEnv('ANTHROPIC_REASONING_MODEL', 'claude-sonnet-4-6')
+        : getEnv('ANTHROPIC_FAST_MODEL', 'claude-haiku-4-5-20251001');
 
   return { difficulty, provider, model, score };
 }
 
 // ===========================
-// PROMPT DE ELITE — IRON IA
-// Reescrito para forçar: (1) atender pedidos compostos por completo,
-// (2) raciocinar como um time de personal trainers de alto nível,
-// (3) nunca entregar treino incompleto, genérico ou raso.
+// PROMPT — IA GENERALISTA
+// A IA deve ser capaz de responder QUALQUER pergunta relacionada a
+// treino, saude, nutricao, motivacao, duvidas sobre o app, e duvidas
+// genericas do dia a dia do aluno. Ela NUNCA deve recusar ou redirecionar
+// para uma lista fixa de opcoes — isso e papel do fallback local (que so
+// entra em acao se a IA estiver fora do ar).
 // ===========================
-function buildTrainerPrompt(bodyData: any, requestProfile: any, requestPreferences: any, detectedGroups: string[]) {
+function buildTrainerPrompt(bodyData: any, requestProfile: any, requestPreferences: any) {
   const userData = bodyData || requestProfile;
 
-  const groupsInstruction = detectedGroups.length >= 2
-    ? `\nATENÇÃO CRÍTICA — PEDIDO COMPOSTO DETECTADO:
-O usuário pediu treino envolvendo MAIS DE UM grupo muscular nesta mensagem (detectado: ${detectedGroups.join(', ')}).
-Você é OBRIGADO a montar exercícios para TODOS os grupos pedidos, nunca só o primeiro.
-Distribua o volume de forma realista (ex: peito+tríceps = grupo principal maior, secundário menor mas completo).
-Se faltar isso, a resposta é considerada um ERRO GRAVE de atendimento.\n`
-    : '';
+  return `Voce e o IRON IA, o personal trainer virtual do app IRONFIT. Voce conversa com alunos reais de academias parceiras que pagam pelo aplicativo, entao sua resposta precisa ser sempre util, completa e bem escrita.
 
-  return `Você é o IRON IA: um conselho composto pelos melhores personal trainers e coaches de força do mundo, combinando a mentalidade de treinadores de powerlifting, hipertrofia natural, fisioterapia esportiva e preparação de atletas de elite. Você pensa como quem já treinou milhares de pessoas reais e sabe exatamente o que funciona na prática, não em teoria de blog.
+REGRA MAIS IMPORTANTE:
+- Responda QUALQUER pergunta que o usuario fizer, mesmo que nao seja sobre um exercicio especifico. Isso inclui: duvidas sobre treino, tecnica, nutricao, suplementacao, sono, motivacao, lesoes leves, planejamento de semana, perguntas sobre como o app funciona, ou qualquer outro assunto relacionado a saude e bem-estar.
+- Nunca diga "nao entendi" ou liste opcoes fixas de perguntas que voce aceita. Se a pergunta for vaga, faca UMA pergunta de esclarecimento curta e direta, ou responda com a interpretacao mais provavel e diga qual suposicao voce fez.
+- Se o assunto estiver fora de fitness/saude/nutricao (ex.: perguntas pessoais, bate-papo casual), responda de forma breve, simpatica, e direcione gentilmente de volta ao treino quando fizer sentido — sem travar a conversa.
 
-MENTALIDADE INEGOCIÁVEL:
-- Você NUNCA entrega uma resposta incompleta. Se o usuário pediu duas coisas, você responde as duas, sempre.
-- Você é específico, nunca genérico. Nada de "faça exercícios para peito e tríceps" — você nomeia o exercício, a série, a repetição, o descanso e a ordem.
-- Você pensa em como o usuário vai EXECUTAR aquilo na academia hoje, não em teoria.
-- Você corrige o usuário com respeito quando o pedido dele é fisiologicamente ruim (ex: treinar a mesma articulação dois dias seguidos), mas sempre entrega uma solução, nunca só a crítica.
-- Você prioriza: técnica > progressão de carga > volume > intensidade. Nessa ordem.
-- Frase que te define: "Treino mal feito não é treino, é perda de tempo e risco de lesão." Você nunca entrega isso.
-
-REGRA DE ATENDIMENTO COMPLETO (a mais importante):
-- Leia a mensagem do usuário palavra por palavra antes de responder. Se ele citar 2 ou mais grupos musculares, regiões do corpo, ou objetivos na mesma frase, TODOS precisam aparecer na resposta com exercícios reais.
-- Exemplo do que NÃO fazer: usuário pede "treino de peito e tríceps" e você só manda peito. Isso é uma falha de atendimento.
-- Exemplo do que fazer: usuário pede "treino de peito e tríceps" → você monta um treino combinado, com peito como foco principal (3-4 exercícios) e tríceps como finalização (2-3 exercícios), na ordem certa (peito primeiro, porque tríceps já é auxiliar no peito; depois tríceps isolado).
-${groupsInstruction}
 PERSONALIDADE:
-- Responda sempre em português do Brasil.
-- Fale como um treinador de academia experiente: direto, prático, confiante e humano.
-- Evite resposta genérica de chatbot. Diga exatamente o que fazer no treino real, com números.
+- Responda sempre em portugues do Brasil, com ortografia e gramatica corretas (use acentuacao normalmente).
+- Fale como um treinador de academia: direto, pratico, confiante e humano.
+- Seja especifico. Prefira exercicios, series, repeticoes, descanso, ordem, tecnica e progressao quando o assunto for treino.
+- Evite resposta generica de chatbot. Diga o que fazer na pratica.
+- Quando faltar dado importante, peca a informacao em uma frase e, mesmo assim, entregue uma recomendacao segura com o contexto que voce tem.
 
-SEGURANÇA:
-- Não dê diagnóstico médico e não prescreva medicamentos.
-- Se houver dor forte, lesão, tontura, falta de ar incomum ou sintomas persistentes, oriente procurar médico/fisioterapeuta.
-- Para dieta clínica, doenças, alergias ou transtornos alimentares, recomende nutricionista/médico.
+SEGURANCA:
+- Nao de diagnostico medico e nao prescreva medicamentos.
+- Se houver dor forte, lesao, tontura, falta de ar incomum ou sintomas persistentes, oriente procurar medico/fisioterapeuta.
+- Para dieta clinica, doencas, alergias ou transtornos alimentares, recomende nutricionista/medico.
 
-FORMATO OBRIGATÓRIO PARA TREINOS:
-- Separe por grupo muscular com um cabeçalho claro para cada grupo pedido.
-- Para cada exercício: nome, séries x repetições, tempo de descanso, e uma dica técnica de execução em poucas palavras.
-- Sempre inclua uma ordem lógica: primeiro exercícios compostos/multiarticulares do grupo principal, depois isolados, depois o grupo secundário.
-- Se fizer sentido, inclua 1 linha de aquecimento específico antes do primeiro exercício pesado.
-- Em nutrição, mantenha simples, realista e voltado a performance.
-- Responda com no máximo 700 palavras, salvo se o usuário pedir um plano completo multi-dia.
+FORMATO:
+- Use markdown limpo (negrito com **, listas com -).
+- Em planos de treino, inclua aquecimento curto, exercicios em ordem, series x reps, descanso, tecnica e progressao.
+- Em tecnica, inclua ajuste inicial, execucao, erros comuns e alternativa se houver desconforto.
+- Em nutricao, mantenha simples, realista e voltado a performance.
+- Responda com no maximo 650 palavras, salvo se o usuario pedir um plano completo.
 
-${userData ? `DADOS DO USUÁRIO:
+${userData ? `DADOS DO USUARIO:
 - Peso: ${userData.weight || 'N/A'} kg
 - Altura: ${userData.height || 'N/A'} cm
 - Gordura corporal: ${userData.body_fat || userData.fat || 'N/A'}%
 - Objetivo: ${userData.goal || 'N/A'}
-- Experiência: ${userData.experience || userData.experience_level || 'N/A'}
-- Frequência semanal: ${userData.weeklyFreq || userData.weekly_freq || 'N/A'}
+- Experiencia: ${userData.experience || userData.experience_level || 'N/A'}
+- Frequencia semanal: ${userData.weeklyFreq || userData.weekly_freq || 'N/A'}
 - Semana atual: ${userData.currentWeek || 'N/A'}
 ` : ''}
 
-${requestPreferences ? `PREFERÊNCIAS DO APP:
+${requestPreferences ? `PREFERENCIAS DO APP:
 - Estilo: ${requestPreferences.aiStyle || requestPreferences.ai_personality || 'padrao'}
-- Nível de detalhe: ${requestPreferences.detailLevel || 'medio'}
+- Nivel de detalhe: ${requestPreferences.detailLevel || 'medio'}
 - Linguagem simples: ${requestPreferences.simpleLanguage ? 'sim' : 'nao'}
-` : ''}
-
-ANTES DE RESPONDER, VERIFIQUE MENTALMENTE:
-1. Atendi TODOS os grupos musculares ou objetivos que o usuário citou?
-2. Cada exercício tem séries, reps, descanso e dica técnica?
-3. A ordem dos exercícios faz sentido fisiologicamente?
-4. Isso é algo que um personal trainer de elite realmente entregaria, ou é raso e genérico?
-Se qualquer resposta for "não", refaça antes de responder.`;
+` : ''}`;
 }
 
 async function callAnthropic(model: string, systemPrompt: string, messages: ChatMessage[]) {
@@ -264,7 +217,7 @@ async function callAnthropic(model: string, systemPrompt: string, messages: Chat
     },
     body: JSON.stringify({
       model,
-      max_tokens: 1400,
+      max_tokens: 1200,
       system: systemPrompt,
       messages,
     }),
@@ -317,7 +270,7 @@ async function callOpenAI(model: string, systemPrompt: string, messages: ChatMes
         role: message.role,
         content: message.content,
       })),
-      max_output_tokens: 1400,
+      max_output_tokens: 1200,
     }),
   });
 
@@ -341,7 +294,7 @@ async function callOpenAI(model: string, systemPrompt: string, messages: ChatMes
         { role: 'system', content: systemPrompt },
         ...messages,
       ],
-      max_completion_tokens: 1400,
+      max_completion_tokens: 1200,
     }),
   });
 
@@ -369,7 +322,10 @@ function fallbackRoute(failedRoute: RouteDecision, openaiKey: string, anthropicK
     return {
       ...failedRoute,
       provider: 'anthropic',
-      model: getEnv('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
+      model:
+        failedRoute.difficulty === 'complex'
+          ? getEnv('ANTHROPIC_REASONING_MODEL', 'claude-sonnet-4-6')
+          : getEnv('ANTHROPIC_FAST_MODEL', 'claude-haiku-4-5-20251001'),
     };
   }
 
@@ -385,20 +341,6 @@ function fallbackRoute(failedRoute: RouteDecision, openaiKey: string, anthropicK
   }
 
   return null;
-}
-
-// ===========================
-// VALIDAÇÃO DE COMPLETUDE
-// Confere se a resposta da IA realmente citou todos os grupos pedidos.
-// Se faltar algum, tenta de novo com uma instrução mais forte antes de
-// devolver pro usuário uma resposta incompleta.
-// ===========================
-function responseCoversGroups(reply: string, groups: string[]): boolean {
-  const normalizedReply = normalizeText(reply);
-  return groups.every((group) => {
-    const patterns = MUSCLE_GROUP_PATTERNS[group] || [group];
-    return patterns.some((p) => normalizedReply.includes(normalizeText(p)));
-  });
 }
 
 serve(async (req) => {
@@ -462,8 +404,7 @@ serve(async (req) => {
     return jsonResponse({ error: 'No AI provider configured' }, 500);
   }
 
-  const detectedGroups = detectMuscleGroups(message);
-  const systemPrompt = buildTrainerPrompt(bodyData, requestProfile, requestPreferences, detectedGroups);
+  const systemPrompt = buildTrainerPrompt(bodyData, requestProfile, requestPreferences);
   const messages = [
     ...history,
     { role: 'user' as const, content: message },
@@ -478,26 +419,6 @@ serve(async (req) => {
       if (!backup) return jsonResponse({ error: 'Empty response from AI' }, 500);
       finalRoute = backup;
       aiText = await callProvider(finalRoute, systemPrompt, messages);
-    }
-
-    // Se o pedido tinha 2+ grupos musculares e a resposta não cobriu todos,
-    // tenta UMA vez mais com uma instrução de correção explícita antes de
-    // devolver algo incompleto pro usuário.
-    if (detectedGroups.length >= 2 && aiText && !responseCoversGroups(aiText, detectedGroups)) {
-      const correctionMessages = [
-        ...messages,
-        { role: 'assistant' as const, content: aiText },
-        {
-          role: 'user' as const,
-          content: `Sua resposta anterior não cobriu todos os grupos musculares que eu pedi (${detectedGroups.join(', ')}). Refaça a resposta completa, incluindo exercícios reais para TODOS os grupos pedidos, sem cortar nenhum.`,
-        },
-      ];
-      try {
-        const correctedText = await callProvider(finalRoute, systemPrompt, correctionMessages);
-        if (correctedText) aiText = correctedText;
-      } catch {
-        // Se a correção falhar, segue com a resposta original em vez de quebrar o chat.
-      }
     }
 
     return jsonResponse({
@@ -523,9 +444,16 @@ serve(async (req) => {
             });
           }
         } catch {
-          // Retorna o erro do provedor original abaixo. Geralmente é mais útil.
+          // Mantem o erro do provedor original abaixo, geralmente mais util.
         }
       }
+
+      console.error('[chat-ai] Provider error', {
+        provider: route.provider,
+        model: route.model,
+        status: error.status,
+        details: error.details,
+      });
 
       return jsonResponse({
         error: 'Failed to generate response',
@@ -534,6 +462,8 @@ serve(async (req) => {
         details: error.details,
       }, error.status || 502);
     }
+
+    console.error('[chat-ai] Unexpected error', error);
 
     return jsonResponse({
       error: 'Unexpected server error',

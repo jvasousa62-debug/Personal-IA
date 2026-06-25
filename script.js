@@ -817,77 +817,89 @@ function buildWorkoutResponse(title, exercises, focus, progression, bodyData) {
     `**Ajuste fino:** ${levelNote}`;
 }
 
-function buildSmartResponse(text) {
-  const t = normalizeMessage(text);
+// ===========================
+// SMART FALLBACK RESPONSES
+// Este bloco SO entra em acao quando a IA online (Edge Function chat-ai)
+// falhar de verdade (sem internet, servico fora do ar, etc). Ele nunca
+// deve travar a conversa com uma lista fixa de opcoes — sempre tenta
+// responder com base no que foi perguntado, e avisa que esta em modo
+// reduzido para o usuario nao achar que aquilo e a resposta completa da IA.
+// ===========================
+function buildSmartResponse(t) {
+  const original = t;
+  t = t.toLowerCase().trim();
   const bodyData = userBodyDataCache || {};
-  const week = bodyData.currentWeek || 1;
-  const weight = bodyData.weight || 80;
-  const goal = bodyData.goal || 'hipertrofia';
-  const est = (pct) => `${Math.max(5, Math.round(weight * pct / 2.5) * 2.5)}kg`;
+  const week = bodyData?.currentWeek || 1;
+  const weight = bodyData?.weight || 75;
+  const goal = bodyData?.goal || 'hipertrofia';
+  const est = (pct) => Math.round(weight * pct / 2.5) * 2.5;
+  const has = (...terms) => terms.every(term => t.includes(term));
+  const any = (...terms) => terms.some(term => t.includes(term));
 
-  if (t.includes('peito') || t.includes('supino') || t.includes('crucifixo')) {
-    return buildWorkoutResponse('Treino de peito inteligente', [
-      { name: 'Supino Reto', sets: 4, reps: '6-10', rest: '90s', load: est(0.65) },
-      { name: 'Supino Inclinado', sets: 3, reps: '8-12', rest: '75s', load: est(0.5) },
-      { name: 'Crucifixo ou Crossover', sets: 3, reps: '12-15', rest: '60s', load: est(0.2) },
-      { name: 'Triceps Pulley', sets: 3, reps: '10-15', rest: '60s', load: 'moderada' }
-    ], 'peitoral com apoio de triceps, priorizando amplitude e controle da descida', 'quando bater o topo das reps em todas as series, sobe 2,5kg no supino e mantem os isoladores controlados.', bodyData);
-  }
+  const offlineNotice = '\n\n_(Estou respondendo em modo offline porque não consegui falar com o servidor da IA agora. Em alguns minutos volto ao normal — tente reenviar a mensagem se quiser uma resposta mais completa.)_';
 
-  if (t.includes('costas') || t.includes('dorsal') || t.includes('remada') || t.includes('puxada')) {
-    return buildWorkoutResponse('Treino de costas com largura e densidade', [
-      { name: 'Puxada Frontal', sets: 4, reps: '8-12', rest: '90s', load: est(0.55) },
-      { name: 'Remada Curvada', sets: 4, reps: '8-10', rest: '90s', load: est(0.65) },
-      { name: 'Remada Unilateral', sets: 3, reps: '10-12/lado', rest: '60s', load: est(0.3) },
-      { name: 'Face Pull', sets: 3, reps: '15-20', rest: '45s', load: 'leve/moderada' }
-    ], 'uma puxada vertical para dorsal e duas remadas para espessura das costas', 'aumente carga nas remadas so se conseguir pausar 1s com as escapulas juntas.', bodyData);
-  }
+  // SUGESTÕES EXATAS E CASOS ESPECÍFICOS
+  if (t.includes('quero montar um treino de hipertrofia') || (t.includes('treino') && t.includes('hipertrofia')))
+    return `💪 **TREINO DE HIPERTROFIA — SEMANA ${week}**\n\n**A — BASE E FORÇA**\n• Supino Reto: 4x8-10 | 90s | ~${est(0.65)}kg\n• Agachamento Livre: 4x6-8 | 120s | ~${est(0.8)}kg\n• Remada Curvada: 4x8-10 | 90s | ~${est(0.65)}kg\n\n**B — VOLUME E ISOLAMENTO**\n• Desenvolvimento Halteres: 3x10-12 | 75s | ~${est(0.35)}kg\n• Leg Press: 3x12-15 | 90s | ~${est(1.4)}kg\n• Cadeira Extensora: 3x15 | 60s\n\n📈 **Dica:** mantenha a progressão de +2,5kg em compostos e foque na técnica.${offlineNotice}`;
 
-  if (t.includes('perna') || t.includes('glute') || t.includes('agachamento')) {
-    return buildWorkoutResponse('Treino de pernas completo', [
-      { name: 'Agachamento Livre', sets: 4, reps: '6-10', rest: '120s', load: est(0.8) },
-      { name: 'Leg Press', sets: 4, reps: '10-15', rest: '90s', load: est(1.4) },
-      { name: 'Terra Romeno', sets: 3, reps: '8-12', rest: '90s', load: est(0.75) },
-      { name: 'Mesa Flexora', sets: 3, reps: '12-15', rest: '60s', load: 'moderada' },
-      { name: 'Panturrilha em Pe', sets: 4, reps: '12-20', rest: '45s', load: 'controlada' }
-    ], 'quadriceps, posterior, gluteo e panturrilha na mesma sessao, sem depender de exercicio aleatorio', 'suba 2,5-5kg nos compostos quando mantiver profundidade e coluna neutra.', bodyData);
-  }
+  if (t.includes('como faço para perder gordura mantendo músculo') || (has('gordura', 'mantendo') || (has('gordura', 'músculo') && !t.includes('dieta'))))
+    return `⚡ **PERDA DE GORDURA MANTENDO MÚSCULO**\n\n**Treino:**\n• Priorize compostos: 3-4x por semana\n• Mantenha cargas desafiadoras: 4x8-12 em supino, agachamento e remada\n• Adicione 1-2 circuitos leves no final do treino\n\n**Nutrição:**\n• Déficit moderado: -300 a -500 kcal\n• Proteína: 2,0-2,2g/kg\n• Carboidrato pós-treino para recuperação\n\n**Recuperação:**\n• Durma 7-9h\n• Evite treinos consecutivos para o mesmo grupo muscular${offlineNotice}`;
 
-  if (t.includes('ombro') || t.includes('deltoid')) {
-    return buildWorkoutResponse('Treino de ombros 3D', [
-      { name: 'Desenvolvimento com Halteres', sets: 4, reps: '6-10', rest: '90s', load: est(0.35) },
-      { name: 'Elevacao Lateral', sets: 4, reps: '12-20', rest: '45s', load: est(0.09) },
-      { name: 'Face Pull', sets: 3, reps: '15-20', rest: '45s', load: 'leve/moderada' },
-      { name: 'Encolhimento', sets: 3, reps: '10-15', rest: '60s', load: est(0.5) }
-    ], 'deltoide anterior, lateral e posterior com volume bem distribuido', 'nos isoladores, progrida primeiro em reps; depois aumente pouco peso para nao roubar com o tronco.', bodyData);
-  }
+  if (t.includes('qual a melhor dieta para ganho de massa') || (has('dieta', 'massa') || has('ganho', 'massa')))
+    return `🥩 **DIETA PARA GANHO DE MASSA**\n\n**Calorias:**\n• +300-500 kcal acima da manutenção\n\n**Macronutrientes:**\n• Proteína: 1,8-2,2g/kg\n• Carboidratos: 45-55% das calorias\n• Gorduras: 20-25% das calorias\n\n**Sugestão prática:**\n• 4-5 refeições por dia\n• Priorize frango, ovos, arroz integral, batata-doce e leguminosas\n\n💡 **Dica:** ajuste as calorias conforme a balança evolui.${offlineNotice}`;
 
-  if (t.includes('emagrecer') || t.includes('perder gordura') || t.includes('definir') || t.includes('secar')) {
-    const calories = Math.round(weight * 28);
-    return `**Plano pratico para perder gordura sem murchar**\n\nPelo seu peso de referencia (${weight}kg), eu comecaria com algo perto de **${calories} kcal/dia** e ajustaria pelo peso semanal, nao pelo peso de um dia isolado.\n\n**Treino:** musculacao 3-5x/semana, mantendo cargas pesadas em compostos. Cardio entra como ferramenta: 20-30 min pos-treino ou em dias separados.\n**Proteina:** ${Math.round(weight * 1.8)}-${Math.round(weight * 2.2)}g/dia.\n**Ritmo bom:** queda de 0,5% a 1% do peso por semana. Mais rapido que isso tende a cobrar performance.\n\n**Regra de ouro:** se a carga despenca no treino, o deficit esta agressivo demais ou a recuperacao esta ruim.`;
-  }
+  if (t.includes('quanto tempo devo descansar entre as séries') || has('descans', 'séries') || has('quanto tempo', 'descans'))
+    return `⏱️ **DESCANSO ENTRE SÉRIES**\n\n• Força (1-6 reps): 2-3 minutos\n• Hipertrofia (8-12 reps): 60-90 segundos\n• Resistência (15+ reps): 30-60 segundos\n\n**Dica:** quanto maior a carga, mais descanso; quanto mais foco em volume, menor o descanso.${offlineNotice}`;
 
-  if (t.includes('proteina') || t.includes('nutricao') || t.includes('dieta') || t.includes('comer') || t.includes('massa')) {
-    const proteinMin = Math.round(weight * 1.6);
-    const proteinMax = Math.round(weight * 2.2);
-    const calories = goal === 'emagrecimento' ? Math.round(weight * 28) : Math.round(weight * 34);
-    return `**Nutricionamento de treino, sem firula**\n\nPara ${weight}kg, uma base honesta seria:\n- **Proteina:** ${proteinMin}-${proteinMax}g/dia\n- **Calorias iniciais:** ~${calories} kcal/dia, ajustando por objetivo e evolucao\n- **Carboidrato:** concentra mais perto do treino para render melhor\n- **Gorduras:** nao zere; elas ajudam aderencia e saude hormonal\n\n**Exemplo simples:** refeicao com arroz/batata, frango/ovos/carne/peixe, legumes e uma fonte de gordura. O basico bem feito ganha do perfeito impossivel.\n\nObs.: para dieta clinica, alergias ou doencas, entra nutricionista.`;
-  }
+  // TREINO ESPECÍFICO POR GRUPO MUSCULAR
+  if (t.includes('peito') || t.includes('supino') || t.includes('crucifixo') || t.includes('peitoral'))
+    return `🔥 **TREINO PEITO — SEMANA ${week}**\n\n**A — FORÇA BASE**\n• Supino Reto: 4x8-10 | 90s | ~${est(0.65)}kg\n• Supino Inclinado: 4x10-12 | 75s | ~${est(0.5)}kg\n\n**B — VOLUME**\n• Crucifixo: 3x12-15 | 60s | ~${est(0.2)}kg\n• Crossover Cabo: 3x15 | 60s\n• Peck Deck: 3x15 | 45s\n\n📈 **Progressão:** adicione +2,5kg por semana no supino.${offlineNotice}`;
 
-  if (t.includes('progress') || t.includes('carga') || t.includes('evoluir') || t.includes('semana') || t.includes('periodizacao')) {
-    const volume = calcVolumeForWeek(week, goal);
-    return `**Progressao de carga - semana ${week}**\n\nSua fase atual: **${volume.note}**.\n\n**Metodo simples que funciona:**\n- Compostos: quando fizer todas as series no topo da faixa, aumenta 2,5kg.\n- Isoladores: primeiro aumenta reps; depois sobe 1-2kg.\n- Se a tecnica quebrar, mantem a carga e melhora execucao.\n- A cada 4-8 semanas, reduza volume/carga por alguns dias se sono, dores e performance piorarem.\n\n**Indicador real:** voce esta evoluindo quando faz mais reps com a mesma carga, mais carga com a mesma tecnica, ou recupera melhor entre series.`;
-  }
+  if (t.includes('costas') || t.includes('dorsal') || t.includes('remada') || t.includes('puxada'))
+    return `💪 **TREINO COSTAS — SEMANA ${week}**\n\n**A — VERTICAL**\n• Puxada Frontal: 4x8-10 | 90s | ~${est(0.55)}kg\n• Remada Curvada: 4x10-12 | 75s | ~${est(0.65)}kg\n\n**B — HORIZONTAL**\n• Remada Unilateral: 3x12/lado | 60s | ~${est(0.3)}kg\n• Pullover: 3x12-15 | 60s\n\n📈 **Progressão:** +2,5kg/semana nas remadas compostas.${offlineNotice}`;
 
-  if (t.includes('descanso') || t.includes('recuperacao') || t.includes('dormir') || t.includes('sono')) {
-    return `**Recuperacao tambem e treino**\n\nPara hipertrofia, usa como base:\n- Compostos pesados: **90-180s**\n- Isoladores: **45-75s**\n- Series muito proximas da falha: descansa mais, nao menos\n\n**Sinais de recuperacao ruim:** queda de carga por varios treinos, dor articular, sono baguncado e falta de vontade de treinar.\n\nMeu ajuste: antes de trocar o treino todo, melhora sono, proteina, hidratacao e reduz 20-30% do volume por uma semana.`;
-  }
+  if (t.includes('perna') || t.includes('glut') || t.includes('agachamento') || t.includes('terra') || t.includes('leg press'))
+    return `🦵 **TREINO PERNAS — SEMANA ${week}**\n\n**A — FORÇA**\n• Agachamento Livre: 5x5-8 | 120s | ~${est(0.8)}kg\n• Terra Romeno: 4x8-10 | 90s | ~${est(0.75)}kg\n\n**B — VOLUME**\n• Leg Press: 4x12-15 | 90s | ~${est(1.4)}kg\n• Cadeira Extensora: 3x15 | 60s\n• Mesa Flexora: 3x12 | 60s\n• Hip Thrust: 4x15 | 75s | ~${est(1.0)}kg\n\n📈 **Progressão:** +5kg/semana no agachamento.${offlineNotice}`;
 
-  if (t.includes('como fazer') || t.includes('tecnica') || t.includes('execucao') || t.includes('exercicio')) {
-    return `**Me manda o nome do exercicio que eu destrincho a tecnica.**\n\nEu vou te responder neste formato:\n- ajuste inicial\n- passo a passo\n- erro mais comum\n- dica de carga\n- alternativa se sentir dor\n\nExemplo: "como fazer supino reto" ou "tecnica do agachamento".`;
-  }
+  if (t.includes('ombro') || t.includes('deltoid') || t.includes('desenvolvimento'))
+    return `⚡ **TREINO OMBROS — SEMANA ${week}**\n\n**A — PRESSÃO**\n• Desenvolvimento Halteres: 4x10-12 | 90s | ~${est(0.35)}kg\n\n**B — ISOLAMENTO 3D**\n• Elevação Lateral: 4x15-20 | 60s | ~${est(0.09)}kg\n• Face Pull: 4x15-20 | 45s\n• Elevação Frontal: 3x12-15 | 60s\n\n📈 **Progressão:** +1,25kg/semana nas elevações.${offlineNotice}`;
 
-  return `**IRON IA na area. Vamos deixar isso util.**\n\nPosso montar um treino, ajustar sua progressao, explicar tecnica, ou organizar dieta de forma pratica.\n\nMe fala uma destas opcoes:\n- "treino de peito/costas/pernas/ombros"\n- "quero perder gordura"\n- "como progredir carga"\n- "como fazer supino/agachamento/remada"\n\nContexto atual que vou usar: semana ${week}, objetivo ${goal}, peso de referencia ${weight}kg.`;
+  if (t.includes('braço') || t.includes('bíceps') || t.includes('tríceps'))
+    return `💪 **TREINO BRAÇO — SEMANA ${week}**\n\n**A — BÍCEPS**\n• Rosca Direta Halteres: 4x10-12 | 75s | ~${est(0.15)}kg\n• Rosca Direta Barra: 3x12-15 | 60s\n\n**B — TRÍCEPS**\n• Rosca Francesa: 4x10-12 | 75s\n• Tríceps Corda: 3x12-15 | 60s\n• Mergulho: 3x8-12 | 90s\n\n📈 **Progressão:** +1,25kg/semana.${offlineNotice}`;
+
+  // NUTRIÇÃO E DIETA
+  if (t.includes('proteína') || t.includes('nutrição') || t.includes('comer') || t.includes('dieta') || t.includes('caloria'))
+    return `🥩 **NUTRIÇÃO PERSONALIZADA**\n\n🎯 **Seu peso (~${weight}kg):**\n• Proteína: ${Math.round(weight * 2.2)}g/dia (${Math.round(weight * 2.2 / 4)} refeições de ${Math.round(weight * 0.55)}g)\n• Calorias: ~${Math.round(weight * (goal === 'emagrecimento' ? 26 : 35))}kcal/dia\n\n🍗 **Fontes de proteína:**\n• Frango, ovo, carne magra, whey, atum\n\n💊 **Suplementos recomendados:**\n• Creatina: 5g/dia\n• Whey: 30g pós-treino\n• Cafeína: 200mg pré-treino\n\n⚠️ Consulte um nutricionista para uma dieta precisa.${offlineNotice}`;
+
+  // PROGRESSÃO E CARGA
+  if (t.includes('progressão') || t.includes('carga') || t.includes('peso') || t.includes('aumentar'))
+    return `📈 **PROGRESSÃO DE CARGA**\n\n**Método linear simples:**\n• Compostos (agachamento, supino): +2,5kg/semana\n• Isolados (rosca, desenvolvimento): +1,25kg/semana\n\n**Quando não conseguir progredir:**\n1. Tire 1-2 repetições e mantenha o peso\n2. Faça +1 série do peso anterior\n3. Tire 1-2 dias de descanso extra\n4. Aumente as calorias em 100-200kcal\n\n💡 **O que evitar:**\n• Pular aumentos\n• Mudar de exercício toda semana\n• Fazer cardio em excesso\n• Dormir pouco${offlineNotice}`;
+
+  // RECUPERAÇÃO E DESCANSO
+  if (t.includes('recuperação') || t.includes('descanso') || t.includes('dormir') || t.includes('sono'))
+    return `😴 **PROTOCOLO DE RECUPERAÇÃO**\n\n**Descanso entre séries:**\n• Força (1-6 reps): 2-3 minutos\n• Hipertrofia (8-12 reps): 1-2 minutos\n• Resistência (15+ reps): 30-60 segundos\n\n**Sono necessário:**\n• 7-9 horas por noite\n• Sem celular 30 min antes de dormir\n• Quarto escuro e fresco\n\n🧘 **Outras técnicas:**\n• Alongamento de 5-10min pós-treino\n• Sauna 2x/semana (opcional)\n• Massagem ou foam roll nos dias de descanso${offlineNotice}`;
+
+  // PERIODIZAÇÃO
+  if (t.includes('peri') || t.includes('semana') || t.includes('plano') || t.includes('programa'))
+    return `📅 **PERIODIZAÇÃO DE 12 SEMANAS**\n\n🔴 **Semanas 1-3 (Acumulação):**\nVolume alto, técnica, base\n• 3-4 séries x 12-15 repetições\n• Descanso de 60-90s\n\n🟠 **Semanas 4-6 (Intensificação):**\nAumentando a carga, reduzindo as repetições\n• 4-5 séries x 8-10 repetições\n• Descanso de 2-3min\n\n🔵 **Semanas 7-8 (Pico):**\nMáxima intensidade\n• 5-6 séries x 5-8 repetições\n• Descanso de 3-5min\n\n⚪ **Semana 9 (Deload):**\n40% menos carga — recuperação ativa${offlineNotice}`;
+
+  // EXERCÍCIOS EM GERAL
+  if (t.includes('exercício') || t.includes('como fazer') || t.includes('técnica'))
+    return `🏋️ **PRINCIPAIS EXERCÍCIOS**\n\n**Compostos (início do treino):**\n• Agachamento, supino, levantamento terra, desenvolvimento\n\n**Isolados (final do treino):**\n• Leg press, crucifixo, rosca scott, puxador\n\n💡 **Dica de execução:**\n1. Controle o peso (não arremesse)\n2. Use amplitude completa\n3. Pause 1-2s na contração máxima\n4. Faça a negativa de forma controlada (2-3s)\n\nMe diga qual exercício você quer detalhar e eu explico passo a passo.${offlineNotice}`;
+
+  // OBJETIVO ESPECÍFICO
+  if (t.includes('ganho') || t.includes('massa') || t.includes('hipertrofia') || (t.includes('músculo') && !t.includes('gordura')))
+    return `💪 **PROTOCOLO DE HIPERTROFIA**\n\n**Volume:**\n• 12-20 séries por grupo muscular/semana\n• 8-12 repetições por série\n• Descanso de 60-90s\n\n**Nutrição:**\n• +300-500kcal acima da manutenção\n• 1,6-2,2g de proteína por kg\n• Carboidratos concentrados no pós-treino\n\n**Frequência:**\n• 3-4x de treino por semana\n• 2 dias de descanso por semana\n• Dormir 8h por noite${offlineNotice}`;
+
+  if (t.includes('emagrecimento') || t.includes('gordura') || t.includes('cut') || t.includes('definição') || (t.includes('massa') && t.includes('definição')))
+    return `⚡ **PROTOCOLO DE EMAGRECIMENTO**\n\n**Déficit calórico:**\n• -300 a -500kcal da manutenção\n• Meta de perder ~0,5kg/semana\n\n**Treino:**\n• Mantenha a força (não reduza a carga)\n• Aumente repetições ou séries\n• Adicione 30min de cardio 2x/semana\n\n**Nutrição:**\n• 2,2g de proteína por kg (mais importante)\n• Reduza carboidratos ou gorduras\n• Hidratação: 3-4L de água/dia${offlineNotice}`;
+
+  // ===========================
+  // FORA DA LISTA CONHECIDA: nunca bloquear.
+  // Damos uma resposta honesta, util e que convida a pessoa a continuar,
+  // em vez de empurrar uma lista fixa de opcoes.
+  // ===========================
+  return `Entendi sua pergunta: "${original.trim()}".\n\nNo momento não consigo falar com o servidor da IA completa, então minhas respostas estão mais limitadas. Posso te ajudar agora com bastante detalhe em: treino por grupo muscular (peito, costas, pernas, ombros, braços), nutrição e calorias, progressão de carga, descanso/recuperação e periodização.\n\nSe sua dúvida for sobre outro assunto, me dê um pouco mais de contexto (por exemplo, qual exercício, qual sintoma, ou qual objetivo) que eu tento te dar o melhor direcionamento possível mesmo nesse modo reduzido. Em breve a IA completa volta a responder normalmente.${offlineNotice}`;
 }
 
 function waitForNaturalResponse(startedAt) {
@@ -988,7 +1000,7 @@ async function sendMessage(userText) {
     console.log('🔐 Token presente:', !!session.access_token);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     let response;
     try {
