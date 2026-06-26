@@ -229,6 +229,26 @@ body {
 }
 .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
 .user-sub { font-size: 11px; color: var(--gray3); }
+.user-role-badge {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(232,255,0,0.12);
+  border: 1px solid rgba(232,255,0,0.28);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.user-role-badge.owner {
+  background: rgba(62,166,255,0.12);
+  border-color: rgba(62,166,255,0.28);
+  color: #7fc2ff;
+}
 
 /* USER MENU */
 .user-menu {

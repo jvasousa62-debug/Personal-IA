@@ -171,6 +171,45 @@ function clearErrors() {
     document.querySelectorAll('input.error').forEach(el => el.classList.remove('error'));
 }
 
+async function getPostLoginDestination(user) {
+    if (!supabaseClient?.from || !user?.id) return 'index.html';
+
+    const { data: profile, error } = await supabaseClient
+        .from('user_profiles')
+        .select('role,account_status')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if (error) {
+        console.warn('Nao foi possivel consultar perfil de acesso:', error.message);
+        return 'index.html';
+    }
+
+    if (profile?.account_status === 'blocked' || profile?.account_status === 'deleted') {
+        await supabaseClient.auth.signOut();
+        throw new Error(profile.account_status === 'blocked'
+            ? 'Sua conta esta bloqueada. Fale com o administrador.'
+            : 'Sua conta foi removida do app. Fale com o administrador.');
+    }
+
+    localStorage.setItem('ironfit_userRole', profile?.role || 'member');
+    if (profile?.account_status === 'active' && profile?.role === 'admin') return 'admin/';
+    if (profile?.account_status === 'active' && profile?.role === 'academy_owner') return 'academy/';
+
+    try {
+        const { data: academies } = await supabaseClient
+            .from('academies')
+            .select('id')
+            .eq('owner_user_id', user.id)
+            .limit(1);
+        if (academies?.length) return 'academy/';
+    } catch (ownerError) {
+        console.warn('Nao foi possivel verificar academia vinculada:', ownerError?.message || ownerError);
+    }
+
+    return 'index.html';
+}
+
 // ===========================
 // LOGOUT
 // ===========================

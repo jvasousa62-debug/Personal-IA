@@ -525,6 +525,45 @@
             if (fullName) localStorage.setItem('ironfit_fullName', fullName);
         }
 
+        async function getPostLoginDestination(user) {
+            if (!supabaseClient?.from || !user?.id) return 'index.html';
+
+            const { data: profile, error } = await supabaseClient
+                .from('user_profiles')
+                .select('role,account_status')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (error) {
+                console.warn('Nao foi possivel consultar perfil de acesso:', error.message);
+                return 'index.html';
+            }
+
+            if (profile?.account_status === 'blocked' || profile?.account_status === 'deleted') {
+                await supabaseClient.auth.signOut();
+                throw new Error(profile.account_status === 'blocked'
+                    ? 'Sua conta esta bloqueada. Fale com o administrador.'
+                    : 'Sua conta foi removida do app. Fale com o administrador.');
+            }
+
+            localStorage.setItem('ironfit_userRole', profile?.role || 'member');
+            if (profile?.account_status === 'active' && profile?.role === 'admin') return 'admin/';
+            if (profile?.account_status === 'active' && profile?.role === 'academy_owner') return 'academy/';
+
+            try {
+                const { data: academies } = await supabaseClient
+                    .from('academies')
+                    .select('id')
+                    .eq('owner_user_id', user.id)
+                    .limit(1);
+                if (academies?.length) return 'academy/';
+            } catch (ownerError) {
+                console.warn('Nao foi possivel verificar academia vinculada:', ownerError?.message || ownerError);
+            }
+
+            return 'index.html';
+        }
+
         function showAuthRedirectError() {
             const params = new URLSearchParams(window.location.search);
             const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -560,7 +599,7 @@
             options: {
                 // Depois do login no Google, o Supabase redireciona para esta URL.
                 // Ajuste se o domínio de produção for diferente.
-                redirectTo: getAuthRedirectUrl('index.html')
+                redirectTo: getAuthRedirectUrl('login.html')
             }
         });
  
@@ -670,12 +709,18 @@
                     localStorage.setItem('ironfit_userEmail', data.user.email || email);
                     localStorage.setItem('ironfit_userId', data.user.id || 'user-' + Date.now());
                     localStorage.setItem('ironfit_loggedIn', 'true');
+                    const destination = await getPostLoginDestination(data.user);
                     showAlert('Login bem-sucedido! Redirecionando...', 'success');
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = destination;
                     }, 1500);
                 }
             } catch (err) {
+                if (err?.message?.includes('bloqueada') || err?.message?.includes('removida')) {
+                    showAlert(err.message, 'error');
+                    return;
+                }
+
                 // Se der qualquer erro, tenta modo desenvolvimento
                 console.warn('Erro no login, redirecionando para modo desenvolvimento:', err);
                 
@@ -764,7 +809,10 @@
             const userEmailLocal = localStorage.getItem('ironfit_userEmail');
 
             if (loggedInLocal && userEmailLocal) {
-                window.location.href = 'index.html';
+                const storedRole = localStorage.getItem('ironfit_userRole');
+                if (storedRole === 'admin') window.location.href = 'admin/';
+                else if (storedRole === 'academy_owner') window.location.href = 'academy/';
+                else window.location.href = 'index.html';
                 return;
             }
 
@@ -777,7 +825,7 @@
                 const { data, error } = await supabaseClient.auth.getUser();
                 if (!error && data?.user) {
                     syncAuthUser(data.user);
-                    window.location.href = 'index.html';
+                    window.location.href = await getPostLoginDestination(data.user);
                 }
             } catch (err) {
                 console.log('Usuário não logado');
