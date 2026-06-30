@@ -33,9 +33,16 @@ function openAdmin() {
   window.location.assign('admin/');
 }
 
+function openAcademy() {
+  document.getElementById('userMenu')?.classList.add('hidden');
+  document.getElementById('mobileOverlay')?.classList.remove('show');
+  window.location.assign('academy/');
+}
+
 window.openSettings = openSettings;
 window.openProfile = openProfile;
 window.openAdmin = openAdmin;
+window.openAcademy = openAcademy;
 
 // ===========================
 // DATA: EXERCISES DATABASE
@@ -1751,14 +1758,40 @@ if (supabaseClient?.auth) {
       localStorage.removeItem('ironfit_userId');
       localStorage.removeItem('ironfit_loggedIn');
       localStorage.removeItem('ironfit_fullName');
+      localStorage.removeItem('ironfit_userRole');
+      setPrivilegedNavigationVisible();
+      applyRoleBadge({ role: 'member' });
     }
   });
 }
 
-function setAdminNavigationVisible(isVisible) {
+function setPrivilegedNavigationVisible({ admin = false, academy = false } = {}) {
   ['adminNavItem', 'adminMenuItem', 'adminMobileNavItem'].forEach((id) => {
-    document.getElementById(id)?.classList.toggle('hidden', !isVisible);
+    document.getElementById(id)?.classList.toggle('hidden', !admin);
   });
+  ['academyNavItem', 'academyMenuItem', 'academyMobileNavItem'].forEach((id) => {
+    document.getElementById(id)?.classList.toggle('hidden', !academy);
+  });
+}
+
+function setAdminNavigationVisible(isVisible) {
+  setPrivilegedNavigationVisible({ admin: isVisible, academy: false });
+}
+
+function applyRoleBadge(profile) {
+  const badge = document.getElementById('userRoleBadge');
+  if (!badge) return;
+
+  const role = profile?.role || localStorage.getItem('ironfit_userRole') || 'member';
+  const labels = {
+    admin: 'Administrador',
+    academy_owner: 'Dono da academia',
+    member: 'Aluno'
+  };
+
+  badge.textContent = labels[role] || 'Aluno';
+  badge.classList.toggle('hidden', role === 'member');
+  badge.classList.toggle('owner', role === 'academy_owner');
 }
 
 async function getAccessProfile(userId) {
@@ -1768,7 +1801,7 @@ async function getAccessProfile(userId) {
   try {
     const { data, error } = await client
       .from('user_profiles')
-      .select('full_name,role,account_status')
+      .select('full_name,role,account_status,academy_id')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -1787,8 +1820,25 @@ async function getAccessProfile(userId) {
 async function applyAccessProfile(user) {
   const profile = await getAccessProfile(user?.id);
   const status = profile?.account_status;
+  let ownsAcademy = profile?.role === 'academy_owner';
 
-  setAdminNavigationVisible(profile?.role === 'admin' && status === 'active');
+  if (!ownsAcademy && status === 'active' && supabaseClient?.from && user?.id) {
+    try {
+      const { data } = await supabaseClient
+        .from('academies')
+        .select('id')
+        .eq('owner_user_id', user.id)
+        .limit(1);
+      ownsAcademy = Boolean(data?.length);
+    } catch (error) {
+      ownsAcademy = false;
+    }
+  }
+
+  const isAdmin = profile?.role === 'admin' && status === 'active';
+  const canOpenAcademy = status === 'active' && (isAdmin || ownsAcademy);
+  setPrivilegedNavigationVisible({ admin: isAdmin, academy: canOpenAcademy });
+  applyRoleBadge(profile);
 
   if (status === 'blocked' || status === 'deleted') {
     alert(status === 'blocked'
@@ -1797,6 +1847,9 @@ async function applyAccessProfile(user) {
     await handleLogout();
     return false;
   }
+
+  if (profile?.role) localStorage.setItem('ironfit_userRole', profile.role);
+  else localStorage.removeItem('ironfit_userRole');
 
   return profile || true;
 }
