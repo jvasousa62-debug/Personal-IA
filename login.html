@@ -670,9 +670,32 @@
                     localStorage.setItem('ironfit_userEmail', data.user.email || email);
                     localStorage.setItem('ironfit_userId', data.user.id || 'user-' + Date.now());
                     localStorage.setItem('ironfit_loggedIn', 'true');
+                    localStorage.setItem('userEmail', data.user.email || email);
+                    localStorage.setItem('userId', data.user.id || 'user-' + Date.now());
+                    if (data.user.user_metadata?.full_name) {
+                        localStorage.setItem('ironfit_fullName', data.user.user_metadata.full_name);
+                    }
+
                     showAlert('Login bem-sucedido! Redirecionando...', 'success');
+
+                    const profileQuery = await supabaseClient
+                        .from('user_profiles')
+                        .select('role,account_status')
+                        .eq('user_id', data.user.id)
+                        .maybeSingle();
+
+                    const profile = profileQuery.data;
+                    const isAdmin = !profileQuery.error && profile?.role === 'admin' && profile?.account_status === 'active';
+                    const isAcademyOwner = !profileQuery.error && profile?.role === 'academy_owner' && profile?.account_status === 'active';
+                    if (isAdmin) {
+                        localStorage.setItem('ironfit_userRole', 'admin');
+                    } else if (isAcademyOwner) {
+                        localStorage.setItem('ironfit_userRole', 'academy_owner');
+                    } else {
+                        localStorage.removeItem('ironfit_userRole');
+                    }
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = isAdmin ? 'admin/' : isAcademyOwner ? 'academy/' : 'index.html';
                     }, 1500);
                 }
             } catch (err) {
@@ -762,9 +785,10 @@
         async function checkIfLoggedIn() {
             const loggedInLocal = localStorage.getItem('ironfit_loggedIn') === 'true';
             const userEmailLocal = localStorage.getItem('ironfit_userEmail');
+            const localRole = localStorage.getItem('ironfit_userRole');
 
-            if (loggedInLocal && userEmailLocal) {
-                window.location.href = 'index.html';
+            if (loggedInLocal && userEmailLocal && localRole) {
+                window.location.href = localRole === 'admin' ? 'admin/' : localRole === 'academy_owner' ? 'academy/' : 'index.html';
                 return;
             }
 
@@ -777,7 +801,25 @@
                 const { data, error } = await supabaseClient.auth.getUser();
                 if (!error && data?.user) {
                     syncAuthUser(data.user);
-                    window.location.href = 'index.html';
+
+                    const { data: profile, error: profileError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('role,account_status')
+                        .eq('user_id', data.user.id)
+                        .maybeSingle();
+
+                    const isAdmin = !profileError && profile?.role === 'admin' && profile?.account_status === 'active';
+                    const isAcademyOwner = !profileError && profile?.role === 'academy_owner' && profile?.account_status === 'active';
+                    if (isAdmin) {
+                        localStorage.setItem('ironfit_userRole', 'admin');
+                        window.location.href = 'admin/';
+                    } else if (isAcademyOwner) {
+                        localStorage.setItem('ironfit_userRole', 'academy_owner');
+                        window.location.href = 'academy/';
+                    } else {
+                        localStorage.removeItem('ironfit_userRole');
+                        window.location.href = 'index.html';
+                    }
                 }
             } catch (err) {
                 console.log('Usuário não logado');

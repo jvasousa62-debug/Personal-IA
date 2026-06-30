@@ -59,14 +59,24 @@
     return labels[status] || status || '-';
   }
 
-  function planLabel(plan) {
+  function roleLabel(role) {
+    const normalized = (role || '').toString().toLowerCase();
     const labels = {
-      free: 'Free',
-      basic: 'Basic',
+      member: 'Aluno',
+      academy_owner: 'Dono da academia',
+      admin: 'Admin'
+    };
+    return labels[normalized] || 'Aluno';
+  }
+
+  function planLabel(plan) {
+    const normalized = (plan || '').toString().toLowerCase();
+    const labels = {
       pro: 'Pro',
+      premium: 'Premium',
       enterprise: 'Enterprise'
     };
-    return labels[plan] || plan || '-';
+    return labels[normalized] || 'Pro';
   }
 
   function academyById(id) {
@@ -213,7 +223,7 @@
           </td>
           <td>
             <select class="admin-select" data-field="plan">
-              ${['free', 'basic', 'pro', 'enterprise'].map((plan) => `<option value="${plan}" ${plan === user.plan ? 'selected' : ''}>${planLabel(plan)}</option>`).join('')}
+              ${['pro', 'premium', 'enterprise'].map((plan) => `<option value="${plan}" ${plan === (user.plan || 'pro').toLowerCase() ? 'selected' : ''}>${planLabel(plan)}</option>`).join('')}
             </select>
           </td>
           <td>
@@ -223,7 +233,7 @@
           </td>
           <td>
             <select class="admin-select" data-field="role">
-              ${['member', 'admin'].map((role) => `<option value="${role}" ${role === user.role ? 'selected' : ''}>${role === 'admin' ? 'Admin' : 'Aluno'}</option>`).join('')}
+              ${['member', 'academy_owner', 'admin'].map((role) => `<option value="${role}" ${role === (user.role || 'member') ? 'selected' : ''}>${roleLabel(role)}</option>`).join('')}
             </select>
           </td>
           <td>
@@ -367,6 +377,7 @@
     event.preventDefault();
     const id = $('#academyId').value;
     const expires = $('#academyExpires').value;
+    const ownerUserId = $('#academyOwnerUserId').value || null;
     const payload = {
       name: $('#academyName').value.trim(),
       access_code: $('#academyCode').value.trim().toUpperCase(),
@@ -374,22 +385,49 @@
       validity_months: Number($('#academyMonths').value || 12),
       expires_at: expires ? new Date(`${expires}T23:59:59`).toISOString() : null,
       status: $('#academyStatus').value,
+      owner_user_id: ownerUserId,
       updated_at: new Date().toISOString()
     };
 
     const request = id
-      ? state.client.from('academies').update(payload).eq('id', id)
-      : state.client.from('academies').insert(payload);
+      ? state.client.from('academies').update(payload).eq('id', id).select('id').single()
+      : state.client.from('academies').insert(payload).select('id').single();
 
-    const { error } = await request;
+    const { data, error } = await request;
     if (error) {
       showAlert(`Erro ao salvar academia: ${error.message}`, 'error');
       return;
     }
 
+    const academyId = data?.id || id;
+
+    if (ownerUserId && academyId) {
+      const { error: ownerError } = await state.client
+        .from('user_profiles')
+        .update({ role: 'academy_owner', academy_id: academyId, updated_at: new Date().toISOString() })
+        .eq('user_id', ownerUserId);
+
+      if (ownerError) {
+        showAlert(`Academia salva, mas houve erro ao vincular o dono: ${ownerError.message}`, 'warning');
+      }
+    }
+
     closeAcademyModal();
     showAlert('Academia salva.');
     await refreshData();
+  }
+
+  function populateAcademyOwnerOptions(academy) {
+    const ownerSelect = $('#academyOwnerUserId');
+    if (!ownerSelect) return;
+
+    const activeOwners = state.users
+      .filter((user) => user.account_status === 'active')
+      .sort((a, b) => (a.full_name || a.email || '').localeCompare(b.full_name || b.email || ''));
+
+    ownerSelect.innerHTML = ['<option value="">Sem dono definido</option>']
+      .concat(activeOwners.map((user) => `<option value="${user.user_id}" ${academy?.owner_user_id === user.user_id ? 'selected' : ''}>${user.full_name || user.email || user.user_id}</option>`))
+      .join('');
   }
 
   function openAcademyModal(academy) {
@@ -401,6 +439,7 @@
     $('#academyMonths').value = academy?.validity_months || 12;
     $('#academyExpires').value = academy?.expires_at ? academy.expires_at.slice(0, 10) : '';
     $('#academyStatus').value = academy?.status || 'active';
+    populateAcademyOwnerOptions(academy);
     $('#academyModal').classList.remove('hidden');
   }
 
@@ -421,6 +460,39 @@
     $('#academyCode').value = `${prefix}${new Date().getFullYear()}`;
   }
 
+  async function handleAdminLogout() {
+    const logoutKeys = [
+      'ironfit_profile',
+      'ironfit_prefs',
+      'ironfit_avatar',
+      'ironfit_plans',
+      'ironfit_checkins',
+      'user_preferences',
+      'user_data',
+      'ironfit_userEmail',
+      'ironfit_fullName',
+      'ironfit_userId',
+      'ironfit_loggedIn',
+      'userEmail',
+      'userId',
+      'userName',
+      'ironfit_userRole',
+      'auth_token'
+    ];
+    logoutKeys.forEach((key) => localStorage.removeItem(key));
+
+    const authClient = state.client?.auth || window.supabaseClient?.auth || (window.supabase && window.IronFitConfig?.SUPABASE_CONFIG ? window.supabase.createClient(window.IronFitConfig.SUPABASE_CONFIG.url, window.IronFitConfig.SUPABASE_CONFIG.key).auth : null);
+    if (authClient?.signOut) {
+      try {
+        await authClient.signOut();
+      } catch (error) {
+        console.warn('Erro no logout admin:', error);
+      }
+    }
+
+    window.location.replace('../login.html');
+  }
+
   function bindEvents() {
     document.querySelectorAll('[data-admin-tab]').forEach((link) => {
       link.addEventListener('click', (event) => {
@@ -434,6 +506,7 @@
     });
 
     $('#refreshAdminBtn')?.addEventListener('click', refreshData);
+    $('#logoutAdminBtn')?.addEventListener('click', handleAdminLogout);
     $('#newAcademyBtn')?.addEventListener('click', () => openAcademyModal());
     $('#academyForm')?.addEventListener('submit', saveAcademy);
     $('#closeAcademyModal')?.addEventListener('click', closeAcademyModal);

@@ -59,7 +59,8 @@
   }
 
   function planLabel(plan) {
-    return ({ basic: 'Basic', pro: 'Pro', enterprise: 'Enterprise' }[plan]) || 'Pro';
+    const normalized = (plan || '').toString().toLowerCase();
+    return ({ pro: 'Pro', premium: 'Premium', enterprise: 'Enterprise' }[normalized]) || 'Pro';
   }
 
   function studentStatus(student) {
@@ -101,27 +102,69 @@
       .eq('user_id', state.user.id)
       .maybeSingle();
 
-    if (profileError || !profile || profile.account_status !== 'active') {
-      denyAccess('Sua conta nao esta ativa para gerir uma academia.');
+    const storedRole = (localStorage.getItem('ironfit_userRole') || '').toLowerCase();
+    const role = (profile?.role || storedRole || '').toLowerCase();
+    const accountStatus = profile?.account_status || 'active';
+    const canAccessAcademy = ['academy_owner', 'admin'].includes(role) && accountStatus === 'active';
+
+    if (!canAccessAcademy) {
+      denyAccess('Sua conta nao esta ativa ou nao tem permissao para gerir uma academia.');
       return;
     }
 
-    state.profile = profile;
+    state.profile = profile || {
+      user_id: state.user.id,
+      email: state.user.email,
+      full_name: state.user.user_metadata?.full_name || state.user.email,
+      role,
+      account_status: accountStatus,
+      academy_id: null
+    };
     await refreshData();
   }
 
   async function refreshData() {
     setLoading(true);
 
-    const { data: academies, error: academyError } = await state.client
+    let academies = [];
+    let academyError = null;
+
+    const { data: ownedAcademies, error: ownedError } = await state.client
       .from('academies')
       .select('id,name,status,access_code,student_limit,validity_months,expires_at,owner_user_id')
       .eq('owner_user_id', state.user.id)
       .order('created_at', { ascending: false })
       .limit(1);
 
+    if (!ownedError && ownedAcademies?.length) {
+      academies = ownedAcademies;
+    } else if (state.profile?.academy_id) {
+      const { data: linkedAcademies, error: linkedError } = await state.client
+        .from('academies')
+        .select('id,name,status,access_code,student_limit,validity_months,expires_at,owner_user_id')
+        .eq('id', state.profile.academy_id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      academies = linkedAcademies || [];
+      academyError = linkedError;
+
+      if (academies?.[0] && !academies[0].owner_user_id) {
+        const { error: linkError } = await state.client
+          .from('academies')
+          .update({ owner_user_id: state.user.id, updated_at: new Date().toISOString() })
+          .eq('id', academies[0].id);
+
+        if (!linkError) {
+          academies[0].owner_user_id = state.user.id;
+        }
+      }
+    } else {
+      academyError = ownedError;
+    }
+
     if (academyError || !academies?.length) {
-      denyAccess('Nenhuma academia vinculada como dono foi encontrada.');
+      renderEmptyState();
       return;
     }
 
@@ -161,6 +204,16 @@
     setLoading(false);
   }
 
+  function renderEmptyState() {
+    setLoading(false);
+    $('#academyContent')?.classList.add('hidden');
+    const denied = $('#academyDenied');
+    if (denied) {
+      denied.classList.remove('hidden');
+      denied.querySelector('p').textContent = 'Ainda nao existe uma academia vinculada a esta conta. O admin pode vincular a academia para liberar o painel.';
+    }
+  }
+
   function renderAll() {
     $('#academyTitle').textContent = state.academy.name;
     $('#growthAcademyName').textContent = state.academy.name;
@@ -197,7 +250,7 @@
           </td>
           <td><span class="academy-status ${status}">${statusLabel(status)}</span></td>
           <td>${formatDate(student.last_seen_at)}</td>
-          <td>${student.plan || 'free'}</td>
+          <td>${planLabel(student.plan || 'pro')}</td>
           <td><button class="academy-danger-btn" type="button" data-action="remove-student">Remover</button></td>
         </tr>
       `;
@@ -303,19 +356,39 @@
   }
 
   async function updatePlan(action) {
-    if (!state.subscription?.id) {
-      showAlert('Nenhuma assinatura encontrada para esta academia.', 'error');
-      return;
-    }
-
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
+    const basePlan = state.subscription?.plan || 'pro';
+    const nextPlan = action === 'upgrade' ? (basePlan === 'enterprise' ? 'enterprise' : (basePlan === 'premium' ? 'enterprise' : 'premium')) : basePlan;
+
     const patches = {
       renew: { status: 'active', next_billing_at: nextMonth.toISOString() },
-      upgrade: { status: 'active', plan: state.subscription.plan === 'enterprise' ? 'enterprise' : 'enterprise', next_billing_at: nextMonth.toISOString() },
+      upgrade: { status: 'active', plan: nextPlan, next_billing_at: nextMonth.toISOString() },
       cancel: { status: 'canceled', canceled_at: new Date().toISOString() }
     };
+
+    if (!state.subscription?.id) {
+      const { data, error } = await state.client.from('subscriptions').insert({
+        academy_id: state.academy.id,
+        user_id: state.user.id,
+        status: 'active',
+        plan: nextPlan,
+        monthly_amount: nextPlan === 'enterprise' ? 299 : nextPlan === 'premium' ? 149 : 79,
+        next_billing_at: nextMonth.toISOString(),
+        started_at: new Date().toISOString()
+      }).select('id').single();
+
+      if (error) {
+        showAlert(`Erro ao criar assinatura: ${error.message}`, 'error');
+        return;
+      }
+
+      state.subscription = { id: data.id, plan: nextPlan, status: 'active' };
+      showAlert('Assinatura criada para a academia.');
+      await refreshData();
+      return;
+    }
 
     const { error } = await state.client
       .from('subscriptions')

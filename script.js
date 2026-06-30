@@ -10,13 +10,21 @@
 function openSettings() {
   document.getElementById('userMenu')?.classList.add('hidden');
   document.getElementById('mobileOverlay')?.classList.remove('show');
-  window.location.assign('preferencias.html');
+  if (localStorage.getItem('ironfit_userRole') === 'admin') {
+    window.location.assign('admin/');
+  } else {
+    window.location.assign('preferencias.html');
+  }
 }
 
 function openProfile() {
   document.getElementById('userMenu')?.classList.add('hidden');
   document.getElementById('mobileOverlay')?.classList.remove('show');
-  window.location.assign('profile.html');
+  if (localStorage.getItem('ironfit_userRole') === 'admin') {
+    window.location.assign('admin/');
+  } else {
+    window.location.assign('profile.html');
+  }
 }
 
 function openAdmin() {
@@ -1716,6 +1724,7 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 if (supabaseUrl && supabaseKey && typeof window.supabase !== 'undefined') {
   try {
     supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    window.supabaseClient = supabaseClient;
     console.log('✅ Supabase configurado');
   } catch (e) {
     console.warn('⚠️ Supabase não pôde ser inicializado:', e.message);
@@ -1753,10 +1762,11 @@ function setAdminNavigationVisible(isVisible) {
 }
 
 async function getAccessProfile(userId) {
-  if (!supabaseClient?.from || !userId) return null;
+  const client = supabaseClient || window.supabaseClient;
+  if (!client?.from || !userId) return null;
 
   try {
-    const { data, error } = await supabaseClient
+    const { data, error } = await client
       .from('user_profiles')
       .select('full_name,role,account_status')
       .eq('user_id', userId)
@@ -1801,8 +1811,16 @@ async function login() {
   if (!email || !password) { alert('Informe email e senha!'); return; }
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) { alert('Erro ao fazer login: ' + error.message); }
-    else { window.location.href = 'index.html'; }
+    if (error) {
+      alert('Erro ao fazer login: ' + error.message);
+    } else {
+      const profile = await getAccessProfile(data.user.id);
+      if (profile?.role === 'admin' && profile?.account_status === 'active') {
+        window.location.href = 'admin/';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
   } catch (err) { alert('Erro na autenticação: ' + err.message); }
 }
 
@@ -1810,9 +1828,10 @@ async function loadUserData() {
   const isLoggedInLocal = localStorage.getItem('ironfit_loggedIn') === 'true';
   const userEmail = localStorage.getItem('ironfit_userEmail');
 
-  function applyUserToUI(displayName, email, avatarUrl) {
+  function applyUserToUI(displayName, email, avatarUrl, isAdmin = false) {
     const firstName = displayName.split(' ')[0];
-    if (document.getElementById('userName')) document.getElementById('userName').textContent = `Bem-vindo ${firstName}`;
+    const label = isAdmin ? `${firstName} (Admin)` : `Bem-vindo ${firstName}`;
+    if (document.getElementById('userName')) document.getElementById('userName').textContent = label;
     if (document.getElementById('userGoal')) document.getElementById('userGoal').textContent = email;
     if (document.getElementById('userMenuEmail')) document.getElementById('userMenuEmail').textContent = email;
     const avatarEl = document.getElementById('userAvatar');
@@ -1834,6 +1853,10 @@ async function loadUserData() {
     setAdminNavigationVisible(false);
     const name = resolveProfileName(userEmail.split('@')[0]);
     applyUserToUI(name, userEmail, localStorage.getItem('ironfit_avatar'));
+    document.getElementById('userRoleBadge')?.classList.add('hidden');
+    document.getElementById('adminMenuItem')?.classList.add('hidden');
+    document.getElementById('adminNavItem')?.classList.add('hidden');
+    document.getElementById('adminMobileNavItem')?.classList.add('hidden');
     return;
   }
 
@@ -1842,6 +1865,10 @@ async function loadUserData() {
     const fallbackEmail = userEmail || 'offline@ironfit.local';
     const name = resolveProfileName('Usuário');
     applyUserToUI(name, fallbackEmail, localStorage.getItem('ironfit_avatar'));
+    document.getElementById('userRoleBadge')?.classList.add('hidden');
+    document.getElementById('adminMenuItem')?.classList.add('hidden');
+    document.getElementById('adminNavItem')?.classList.add('hidden');
+    document.getElementById('adminMobileNavItem')?.classList.add('hidden');
     return;
   }
 
@@ -1852,18 +1879,41 @@ async function loadUserData() {
       const fallbackEmail = userEmail || 'offline@ironfit.local';
       const name = resolveProfileName('Usuário');
       applyUserToUI(name, fallbackEmail, localStorage.getItem('ironfit_avatar'));
+      document.getElementById('userRoleBadge')?.classList.add('hidden');
+      document.getElementById('adminMenuItem')?.classList.add('hidden');
+      document.getElementById('adminNavItem')?.classList.add('hidden');
+      document.getElementById('adminMobileNavItem')?.classList.add('hidden');
       return;
     }
     const accessProfile = await applyAccessProfile(user);
     if (!accessProfile) return;
     const profileName = accessProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
     const name = resolveProfileName(profileName);
-    applyUserToUI(name, user.email, localStorage.getItem('ironfit_avatar'));
+    const isAdmin = accessProfile?.role === 'admin' && accessProfile?.account_status === 'active';
+    applyUserToUI(name, user.email, localStorage.getItem('ironfit_avatar'), isAdmin);
+
+    if (isAdmin) {
+      document.getElementById('userRoleBadge')?.classList.remove('hidden');
+      document.getElementById('adminMenuItem')?.classList.remove('hidden');
+      document.getElementById('adminNavItem')?.classList.remove('hidden');
+      document.getElementById('adminMobileNavItem')?.classList.remove('hidden');
+      localStorage.setItem('ironfit_userRole', 'admin');
+    } else {
+      document.getElementById('userRoleBadge')?.classList.add('hidden');
+      document.getElementById('adminMenuItem')?.classList.add('hidden');
+      document.getElementById('adminNavItem')?.classList.add('hidden');
+      document.getElementById('adminMobileNavItem')?.classList.add('hidden');
+      localStorage.removeItem('ironfit_userRole');
+    }
   } catch (err) {
     console.warn('Nao foi possivel carregar usuario do Supabase:', err.message);
     const fallbackEmail = userEmail || 'offline@ironfit.local';
     const name = resolveProfileName('Usuário');
     applyUserToUI(name, fallbackEmail, localStorage.getItem('ironfit_avatar'));
+    document.getElementById('userRoleBadge')?.classList.add('hidden');
+    document.getElementById('adminMenuItem')?.classList.add('hidden');
+    document.getElementById('adminNavItem')?.classList.add('hidden');
+    document.getElementById('adminMobileNavItem')?.classList.add('hidden');
   }
 }
 
@@ -1878,16 +1928,19 @@ function toggleUserMenu() {
 
 async function handleLogout() {
   console.log('Logout iniciado');
-  const keysToRemove = ['ironfit_profile', 'ironfit_prefs', 'ironfit_avatar', 'ironfit_plans', 'ironfit_checkins', 'user_preferences', 'user_data', 'ironfit_userEmail', 'ironfit_fullName', 'ironfit_userId', 'ironfit_loggedIn'];
+  const keysToRemove = ['ironfit_profile', 'ironfit_prefs', 'ironfit_avatar', 'ironfit_plans', 'ironfit_checkins', 'user_preferences', 'user_data', 'ironfit_userEmail', 'ironfit_fullName', 'ironfit_userId', 'ironfit_loggedIn', 'userEmail', 'userId', 'userName', 'ironfit_userRole', 'auth_token'];
   keysToRemove.forEach(k => localStorage.removeItem(k));
-  if (supabaseClient) {
+
+  const client = supabaseClient || window.supabaseClient || (window.supabase && window.IronFitConfig?.SUPABASE_CONFIG ? window.supabase.createClient(window.IronFitConfig.SUPABASE_CONFIG.url, window.IronFitConfig.SUPABASE_CONFIG.key) : null);
+  if (client?.auth?.signOut) {
     try {
-      await supabaseClient.auth.signOut();
+      await client.auth.signOut();
       console.log('Supabase signOut concluído');
     } catch (e) {
       console.warn('Erro no signOut:', e);
     }
   }
+
   window.location.href = 'login.html';
 }
 
@@ -1907,7 +1960,17 @@ async function isUserAuthenticated() {
     const { data: { user }, error } = await supabaseClient.auth.getUser();
     if (user && !error) {
       syncAuthenticatedUser(user);
-      return await applyAccessProfile(user);
+      const accessProfile = await applyAccessProfile(user);
+
+      if (accessProfile && accessProfile.role === 'admin' && accessProfile.account_status === 'active') {
+        if (!window.location.pathname.includes('/admin/')) {
+          window.location.href = 'admin/';
+          return false;
+        }
+        return true;
+      }
+
+      return Boolean(accessProfile);
     }
     setAdminNavigationVisible(false);
     return false;

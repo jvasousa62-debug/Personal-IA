@@ -34,6 +34,7 @@
         </div>
         <div class="admin-header-actions">
           <button class="admin-icon-btn" id="refreshAdminBtn" type="button" title="Atualizar dados" aria-label="Atualizar dados">↻</button>
+          <button class="admin-secondary-btn" id="logoutAdminBtn" type="button">Sair</button>
           <button class="admin-primary-btn" id="newAcademyBtn" type="button">Nova academia</button>
         </div>
       </header>
@@ -167,6 +168,11 @@
       <label>Nome
         <input class="admin-input" id="academyName" required placeholder="Power Gym" />
       </label>
+      <label>Dono da academia
+        <select class="admin-input" id="academyOwnerUserId">
+          <option value="">Sem dono definido</option>
+        </select>
+      </label>
       <label>Codigo de acesso
         <div class="admin-inline">
           <input class="admin-input" id="academyCode" required placeholder="POWER2026" />
@@ -198,8 +204,9 @@
     </form>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.5/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"></script>
   <script src="../src/config.js"></script>
+  <script src="../src/plan-config.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

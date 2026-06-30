@@ -227,7 +227,22 @@ body {
   color: var(--black);
   flex-shrink: 0;
 }
+.user-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(232,255,0,0.16);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.user-badge.hidden { display: none; }
 .user-sub { font-size: 11px; color: var(--gray3); }
 
 /* USER MENU */
@@ -284,6 +299,10 @@ body {
 .user-menu-item:hover {
   background: var(--black3);
   color: var(--accent);
+}
+.user-menu-item.admin-item {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .user-menu-item.logout {

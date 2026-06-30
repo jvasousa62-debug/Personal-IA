@@ -104,6 +104,63 @@
       color: var(--accent);
     }
 
+    .profile-admin-banner {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(232,255,0,0.08);
+      border: 1px solid var(--accent);
+      border-radius: 18px;
+      padding: 20px;
+      margin-top: 18px;
+    }
+
+    .profile-admin-pill {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      background: var(--accent);
+      color: var(--black);
+      padding: 8px 14px;
+      border-radius: 999px;
+      width: fit-content;
+    }
+
+    .profile-admin-text {
+      color: var(--white);
+      line-height: 1.6;
+      max-width: 680px;
+    }
+
+    .admin-account-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .admin-account-card {
+      background: var(--black3);
+      border: 1px solid var(--black4);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .admin-account-card strong {
+      display: block;
+      color: var(--white);
+      font-size: 14px;
+    }
+
+    .admin-account-card span {
+      color: var(--gray3);
+      font-size: 13px;
+    }
+
     .profile-content {
       padding: 32px 48px;
       max-width: 1000px;
@@ -304,14 +361,25 @@
           <div class="profile-badge" id="profileLevelBadge">⭐ Intermediário</div>
           <div class="profile-badge" id="profileFreqBadge">🏋️ 4x/semana</div>
         </div>
+
+        <div class="profile-admin-banner hidden" id="adminBanner">
+          <div class="profile-admin-pill">Conta Administrativa</div>
+          <div class="profile-admin-text">Esta conta está marcada como admin. O perfil administrativo tem layout próprio e não exibe dados de medidas ou objetivos do usuário.</div>
+          <button class="action-btn primary" style="max-width: 240px;" onclick="window.location.href='admin/'">👑 Ir para Área Admin</button>
+        </div>
       </div>
     </div>
 
     <div class="profile-content">
       <div id="profileAlert" class="profile-alert"></div>
 
+      <div class="profile-section hidden" id="adminAccountsSection">
+        <div class="profile-section-title">Contas Admin Cadastradas</div>
+        <div class="admin-account-list" id="adminAccountList"></div>
+      </div>
+
       <!-- DADOS PESSOAIS -->
-      <div class="profile-section">
+      <div class="profile-section" data-section="personal">
         <div class="profile-section-title">Dados Pessoais</div>
         <div class="profile-grid">
           <div class="form-group">
@@ -347,7 +415,7 @@
       </div>
 
       <!-- OBJETIVOS -->
-      <div class="profile-section">
+      <div class="profile-section" data-section="objective">
         <div class="profile-section-title">Objetivos & Nível</div>
         <div class="profile-grid">
           <div class="form-group">
@@ -385,7 +453,7 @@
       </div>
 
       <!-- MEDIDAS CORPORAIS -->
-      <div class="profile-section">
+      <div class="profile-section" data-section="measures">
         <div class="profile-section-title">Medidas Corporais (cm)</div>
         <div class="profile-grid">
           <div class="form-group">
@@ -424,7 +492,7 @@
       </div>
 
       <!-- PREFERÊNCIAS -->
-      <div class="profile-section">
+      <div class="profile-section" data-section="preferences">
         <div class="profile-section-title">Preferências</div>
         <div class="toggle-group">
           <div>
@@ -522,7 +590,22 @@
           console.log('❌ Usuário não definido');
           throw new Error('Usuário não autenticado');
         }
+        if (window.supabaseClient?.from && currentUser.id) {
+          try {
+            const { data: profile, error: profileError } = await window.supabaseClient
+              .from('user_profiles')
+              .select('role,account_status')
+              .eq('user_id', currentUser.id)
+              .maybeSingle();
 
+            if (!profileError && profile?.role === 'admin' && profile?.account_status === 'active') {
+              window.location.href = 'admin/';
+              return;
+            }
+          } catch (err) {
+            console.warn('Erro ao verificar perfil admin:', err);
+          }
+        }
         const fullName = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
         document.getElementById('profileName').innerHTML = fullName + '<span> FIT</span>';
         document.getElementById('profileEmail').textContent = currentUser.email;
@@ -623,6 +706,8 @@
       if (data.thigh_l) document.getElementById('pfThighL').value = data.thigh_l;
       if (data.calf) document.getElementById('pfCalf').value = data.calf;
 
+      applyAdminProfile(data.role === 'admin', data);
+
       // Preferências
       if (data.notifications !== undefined) {
         const toggle = document.getElementById('toggleNotifications');
@@ -662,6 +747,78 @@
       if (weight && height) {
         const imc = (weight / ((height / 100) ** 2)).toFixed(1);
         document.getElementById('pfIMC').value = imc;
+      }
+    }
+
+    function applyAdminProfile(isAdmin, data = {}) {
+      const adminMode = Boolean(isAdmin);
+      document.getElementById('adminBanner')?.classList.toggle('hidden', !adminMode);
+      document.getElementById('adminAccountsSection')?.classList.toggle('hidden', !adminMode);
+      document.querySelector('[data-section="personal"]')?.classList.toggle('hidden', adminMode);
+      document.querySelector('[data-section="objective"]')?.classList.toggle('hidden', adminMode);
+      document.querySelector('[data-section="measures"]')?.classList.toggle('hidden', adminMode);
+      document.querySelector('[data-section="preferences"]')?.classList.toggle('hidden', adminMode);
+
+      if (!adminMode) return;
+
+      const badges = {
+        admin: '👑 Administrador',
+        active: '🔓 Ativo',
+        blocked: '⛔ Bloqueado',
+        deleted: '🗑️ Deletado'
+      };
+      document.getElementById('profileGoalBadge').textContent = badges.admin;
+      document.getElementById('profileLevelBadge').textContent = badges[data.account_status] || (data.account_status ? `⛔ ${data.account_status}` : '🔒 Admin');
+      document.getElementById('profileFreqBadge').textContent = `🛡️ ${data.role || 'admin'}`;
+
+      const avatarEl = document.getElementById('profileAvatar');
+      if (avatarEl && !localStorage.getItem('ironfit_avatar')) {
+        avatarEl.innerHTML = '<span style="font-size:56px;">👑</span>';
+      }
+
+      loadAdminAccounts();
+    }
+
+    async function loadAdminAccounts() {
+      const list = document.getElementById('adminAccountList');
+      if (!list) return;
+      list.innerHTML = '<div class="admin-account-card"><span>Carregando contas administrativas...</span></div>';
+
+      if (!window.supabaseClient?.from) {
+        list.innerHTML = '<div class="admin-account-card"><span>Sem acesso ao Supabase.</span></div>';
+        return;
+      }
+
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('user_profiles')
+          .select('full_name,email,role,account_status')
+          .eq('role', 'admin')
+          .in('account_status', ['active', 'blocked'])
+          .order('full_name', { ascending: true });
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          list.innerHTML = '<div class="admin-account-card"><span>Nenhuma conta admin cadastrada.</span></div>';
+          return;
+        }
+
+        list.innerHTML = data.map((admin) => {
+          const label = admin.full_name || admin.email || 'Admin sem nome';
+          const status = admin.account_status === 'active' ? 'Ativo' : admin.account_status;
+          return `
+            <div class="admin-account-card">
+              <div>
+                <strong>${label}</strong>
+                <span>${admin.email}</span>
+              </div>
+              <div><span>${status}</span></div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.warn('Erro ao carregar contas admin:', err);
+        list.innerHTML = '<div class="admin-account-card"><span>Erro ao listar contas admin.</span></div>';
       }
     }
 

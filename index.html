@@ -74,7 +74,10 @@
       <div class="sidebar-footer" id="sidebarUser" onclick="toggleUserMenu()" style="cursor: pointer;">
         <div class="user-avatar" id="userAvatar">💪</div>
         <div style="flex:1;min-width:0;">
-          <div class="user-name" id="userName">Bem-vindo</div>
+          <div class="user-name-row">
+            <div class="user-name" id="userName">Bem-vindo</div>
+            <div class="user-badge hidden" id="userRoleBadge">ADMIN</div>
+          </div>
           <div class="user-sub" id="userGoal">IRON IA</div>
         </div>
       </div>
@@ -85,7 +88,7 @@
         <hr class="user-menu-divider">
         <div class="user-menu-item" onclick="openSettings()">⚙️ Preferências</div>
         <div class="user-menu-item" onclick="openProfile()">👤 Meu Perfil</div>
-        <div class="user-menu-item hidden" id="adminMenuItem" onclick="openAdmin()">Admin</div>
+        <div class="user-menu-item hidden" id="adminMenuItem" onclick="openAdmin()">👑 Área Admin</div>
         <hr class="user-menu-divider">
         <div class="user-menu-item logout" id="logoutButton">🔓 Desconectar</div>
       </div>
@@ -507,9 +510,10 @@
     </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.5/dist/umd/supabase.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script src="src/config.js" defer></script>
+  <script src="src/plan-config.js" defer></script>
   <script src="gifs-data.js" defer></script>
   
   <!-- IRONFIT Core Data -->
