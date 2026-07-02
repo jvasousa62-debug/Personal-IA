@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700;900&family=Barlow+Condensed:wght@400;600;700;900&display=swap');
+
+:root {
+  --black: #020202;
+  --dark: #0a0a0a;
+  --dark2: #111;
+  --dark3: #161616;
+  --gray1: #1e1e1e;
+  --gray2: #2a2a2a;
+  --yellow: #FFD600;
+  --yellow2: #FFC107;
+  --yellow3: #FF9800;
+  --white1: #FAFAFA;
+  --white2: #cccccc;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--black);
+  color: var(--white1);
+  font-family: 'Barlow', sans-serif;
+  overflow-x: hidden;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--dark); }
+::-webkit-scrollbar-thumb { background: var(--yellow); border-radius: 2px; }
+
+/* TYPOGRAPHY HELPERS */
+.font-hero   { font-family: 'Bebas Neue', sans-serif; }
+.font-cond   { font-family: 'Barlow Condensed', sans-serif; }
+.font-body   { font-family: 'Barlow', sans-serif; }
+
+/* CLIP PATH BUTTON */
+.clip-btn {
+  clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+}
+.clip-btn-sm {
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+}
+
+/* GLOW TEXT */
+.glow-yellow {
+  text-shadow: 0 0 60px rgba(255, 214, 0, 0.5), 0 0 120px rgba(255, 214, 0, 0.2);
+}
+
+/* SHIMMER */
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%);  }
+}
+.shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+}
+.shimmer:hover::before {
+  animation: shimmer 0.6s ease forwards;
+}
+
+/* BADGE DOT PULSE */
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,214,0,0.6); }
+  50%       { box-shadow: 0 0 0 6px rgba(255,214,0,0); }
+}
+.badge-dot {
+  animation: badge-pulse 1.5s ease infinite;
+}
+
+/* PARTICLE */
+@keyframes particle-float {
+  0%   { opacity: 0; transform: translateY(100vh) scale(0); }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.3; }
+  100% { opacity: 0; transform: translateY(-100px) scale(1.5); }
+}
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--yellow);
+  border-radius: 50%;
+  opacity: 0;
+  animation: particle-float linear infinite;
+}
+
+/* LIGHTNING */
+@keyframes lightning-flash {
+  0%, 90%, 100% { opacity: 0; }
+  92%, 96%      { opacity: 1; }
+  94%           { opacity: 0.3; }
+}
+
+/* FLOAT */
+@keyframes float-anim {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-12px); }
+}
+.float-anim { animation: float-anim 4s ease infinite; }
+
+/* TYPING DOTS */
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%           { transform: translateY(-4px); opacity: 1; }
+}
+.typing-dot   { animation: typing-dot 1.2s ease infinite; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* PROGRESS BAR */
+@keyframes fill-bar {
+  from { width: 0; }
+  to   { width: var(--bar-w); }
+}
+.fill-bar {
+  animation: fill-bar 2s ease 1s both;
+  width: var(--bar-w);
+}
+
+/* GLOW PULSE */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+  50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.1); }
+}
+.glow-pulse {
+  animation: glow-pulse 4s ease infinite;
+}
+
+/* GRID BACKGROUND */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,214,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,214,0,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at 60% 50%, black 30%, transparent 70%);
+}
+
+.grid-bg-sm {
+  background-image:
+    linear-gradient(rgba(255,214,0,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,214,0,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="IRONFIT - Seu personal trainer de IA disponível 24h para musculação, hipertrofia, força e treinos personalizados." />
+  <meta name="theme-color" content="#e8ff00" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="IRONFIT" />
+  <meta name="supabase-url" content="https://oqqoafejnzoolbpskbji.supabase.co" />
+  <meta name="supabase-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xcW9hZmVqbnpvb2xicHNrYmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODQ0NzYsImV4cCI6MjA5MjM2MDQ3Nn0.28ilXh_YHdf7PBCrEz4r_gA20MmeOmo7ZViNIixMJgM" />
+  <meta name="csrf-token" content="temporary-placeholder" />
+  <title>IRONFIT — Personal IA</title>
+  <link rel="icon" type="image/png" href="/icones/icon-192x192.png?v=20260701" />
+  <link rel="apple-touch-icon" href="/icones/icon-192x192.png?v=20260701" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.json?v=20260701">
+</head>
+<body>
+
+  <!-- SPLASH -->
+  <div id="splash">
+    <div class="splash-inner">
+      <div class="splash-logo">IRON<span>FIT</span></div>
+      <div class="splash-sub">POWERED BY IA</div>
+      <div class="splash-bar"><div class="splash-progress"></div></div>
+    </div>
+  </div>
+
+  <!-- APP WRAPPER -->
+  <div id="app" class="hidden">
+
+    <!-- SIDEBAR NAV -->
+    <nav class="sidebar">
+      <div class="sidebar-logo brand-logo">IRON<span>FIT</span></div>
+      <ul class="nav-links">
+        <li class="nav-item active" data-page="chat" aria-current="page">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path><path d="M8 10h8"></path><path d="M8 14h5"></path></svg></span>
+          <span>Personal IA</span>
+        </li>
+        <li class="nav-item" data-page="plans">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M8 11h8"></path><path d="M8 16h6"></path></svg></span>
+          <span>Planilhas</span>
+        </li>
+        <li class="nav-item" data-page="exercises">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m10 8 6 4-6 4V8z"></path></svg></span>
+          <span>Exercícios</span>
+        </li>
+        <li class="nav-item" data-page="builder">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg></span>
+          <span>Montar Treino</span>
+        </li>
+        <li class="nav-item" data-page="progress">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></span>
+          <span>Progresso</span>
+        </li>
+        <li class="nav-item" data-page="profile" onclick="openProfile()">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
+          <span>Perfil</span>
+        </li>
+        <li class="nav-item" data-page="settings" onclick="openSettings()">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2l-.18 1.2a2 2 0 0 1-1 1.45l-1.1.62a2 2 0 0 0-.73 2.73l.6 1a2 2 0 0 1 0 2l-.6 1a2 2 0 0 0 .73 2.73l1.1.62a2 2 0 0 1 1 1.45l.18 1.2a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2l.18-1.2a2 2 0 0 1 1-1.45l1.1-.62a2 2 0 0 0 .73-2.73l-.6-1a2 2 0 0 1 0-2l.6-1a2 2 0 0 0-.73-2.73l-1.1-.62a2 2 0 0 1-1-1.45L14.22 4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+          <span>Preferências</span>
+        </li>
+        <li class="nav-item hidden" id="adminNavItem" data-page="admin" onclick="openAdmin()">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v6c0 5 3.4 8 8 8s8-3 8-8V7l-8-4z"></path><path d="M9 12l2 2 4-4"></path></svg></span>
+          <span>Admin</span>
+        </li>
+        <li class="nav-item hidden" id="academyNavItem" data-page="academy" onclick="openAcademy()">
+          <span class="nav-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path><path d="M9 9v.01"></path><path d="M9 13v.01"></path><path d="M9 17v.01"></path></svg></span>
+          <span>Academia</span>
+        </li>
+      </ul>
+      <div class="sidebar-footer" id="sidebarUser" onclick="toggleUserMenu()" style="cursor: pointer;">
+        <div class="user-avatar" id="userAvatar">💪</div>
+        <div style="flex:1;min-width:0;">
+          <div class="user-name-row">
+            <div class="user-name" id="userName">Bem-vindo</div>
+            <div class="user-badge hidden" id="userRoleBadge">ADMIN</div>
+          </div>
+          <div class="user-sub" id="userGoal">IRON IA</div>
+          <div class="user-role-badge hidden" id="userRoleBadge">Aluno</div>
+        </div>
+      </div>
+
+      <!-- User Dropdown Menu -->
+      <div class="user-menu hidden" id="userMenu">
+        <div class="user-menu-header" id="userMenuEmail">seu.email@exemplo.com</div>
+        <hr class="user-menu-divider">
+        <div class="user-menu-item" onclick="openSettings()">⚙️ Preferências</div>
+        <div class="user-menu-item" onclick="openProfile()">👤 Meu Perfil</div>
+        <div class="user-menu-item hidden" id="adminMenuItem" onclick="openAdmin()">👑 Área Admin</div>
+        <div class="user-menu-item hidden" id="academyMenuItem" onclick="openAcademy()">Area da academia</div>
+        <hr class="user-menu-divider">
+        <div class="user-menu-item logout" id="logoutButton">🔓 Desconectar</div>
+      </div>
+    </nav>
+
+    <!-- MOBILE TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-logo brand-logo">IRON<span>FIT</span></div>
+      <button class="hamburger" id="hamburger">&#9776;</button>
+    </header>
+
+    <!-- MOBILE NAV OVERLAY -->
+    <div class="mobile-overlay hidden" id="mobileOverlay">
+      <div class="mobile-menu">
+        <button class="close-menu" id="closeMenu">&#10005;</button>
+        <ul class="mobile-nav-links">
+          <li class="mnav-item active" data-page="chat">Personal IA</li>
+          <li class="mnav-item" data-page="plans">Planilhas</li>
+          <li class="mnav-item" data-page="exercises">Exercícios</li>
+          <li class="mnav-item" data-page="builder">Montar Treino</li>
+          <li class="mnav-item" data-page="progress">Progresso</li>
+          <li class="mnav-item" data-page="profile" onclick="openProfile()">Perfil</li>
+          <li class="mnav-item" data-page="settings" onclick="openSettings()">Preferências</li>
+          <li class="mnav-item hidden" id="adminMobileNavItem" data-page="admin" onclick="openAdmin()">Admin</li>
+          <li class="mnav-item hidden" id="academyMobileNavItem" data-page="academy" onclick="openAcademy()">Academia</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+      <!-- PAGE: CHAT -->
+      <section class="page active" id="page-chat">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Personal <span class="accent">IA</span></h1>
+            <p class="page-sub">Seu treinador pessoal disponível <span>24h</span></p>
+          </div>
+          <div class="page-header-actions">
+            <div class="ai-status" aria-live="polite">
+              <span class="pulse"></span>
+              <span class="status-copy"><strong>IA ativa</strong><small>~2s resposta</small></span>
+            </div>
+            <button class="reset-chat-btn" id="resetChatBtn" title="Limpar histórico do chat" aria-label="Limpar histórico do chat"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
+          </div>
+        </div>
+        <div class="chat-container">
+          <div class="quick-start quick-start-compact" aria-label="Ajustes rápidos do treino">
+            <div class="quick-start-actions">
+              <button class="onboarding-chip" data-msg="Meu objetivo principal é hipertrofia. Monte um plano inicial.">Objetivo</button>
+              <button class="onboarding-chip" data-msg="Meu nível atual é iniciante. Quero um treino seguro.">Nível</button>
+              <button class="onboarding-chip" data-msg="Tenho 45 minutos por treino. Ajuste minha rotina.">Tempo</button>
+              <button class="onboarding-chip" data-msg="Tenho acesso a academia completa. Monte meu treino.">Equipamentos</button>
+            </div>
+          </div>
+          <div class="chat-messages" id="chatMessages">
+            <div class="msg-wrapper ai hero-message">
+              <div class="msg-avatar">IA</div>
+              <div class="msg-bubble ai">
+                <h2>Seu físico não muda por sorte.</h2>
+                <p>Sou o <strong>IRON IA</strong>. Vou transformar objetivo, rotina e equipamentos em ação: treino claro, progressão e ajustes sem enrolação.</p>
+                <p class="hero-question"><strong>Qual evolução vamos buscar hoje?</strong></p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-suggestions">
+            <button class="suggestion-btn goal-muscle" data-msg="Quero montar um treino de hipertrofia"><span class="suggestion-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg></span><span><strong>Hipertrofia</strong><small>volume e progressão</small></span></button>
+            <button class="suggestion-btn goal-cut" data-msg="Como faço para perder gordura mantendo músculo?"><span class="suggestion-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.5 0 2.5-1 2.5-2.5 0-1.2-.7-2.1-1.5-3-1-1.1-1.9-2.2-1.5-4.5 2.6 1.4 5 4.3 5 8a5 5 0 0 1-10 0c0-1.9.9-3.8 2.4-5.1-.1 1.7.1 3.3.6 4.6z"></path></svg></span><span><strong>Perda de gordura</strong><small>secar sem murchar</small></span></button>
+            <button class="suggestion-btn goal-food" data-msg="Qual a melhor dieta para ganho de massa?"><span class="suggestion-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h16"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M7 11a5 5 0 0 1 10 0"></path><path d="M8 19h8"></path></svg></span><span><strong>Dieta para massa</strong><small>macro base</small></span></button>
+            <button class="suggestion-btn goal-rest" data-msg="Quanto tempo devo descansar entre as séries?"><span class="suggestion-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M9 2h6"></path></svg></span><span><strong>Descanso</strong><small>ritmo de treino</small></span></button>
+          </div>
+          <div class="chat-input-area">
+            <textarea id="chatInput" class="chat-input" placeholder="Conte seu objetivo, dúvida ou treino de hoje..." rows="1" aria-label="Mensagem para o personal IA"></textarea>
+            <button class="send-btn" id="sendBtn" title="Enviar mensagem" aria-label="Enviar mensagem"><span class="send-icon"><svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4 20-7z"></path></svg></span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: PLANS -->
+      <section class="page" id="page-plans">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Planilhas de <span class="accent">Treino</span></h1>
+            <p class="page-sub">Programas prontos por objetivo</p>
+          </div>
+        </div>
+        <div class="plans-grid">
+
+          <div class="plan-card" data-plan="hipertrofia">
+            <div class="plan-badge">POPULAR</div>
+            <div class="plan-level">Intermediário</div>
+            <h2 class="plan-name">Hipertrofia Max</h2>
+            <p class="plan-desc">Programa 4x por semana focado em ganho de massa muscular com volume progressivo.</p>
+            <div class="plan-meta">
+              <span>4x semana</span>
+              <span>12 semanas</span>
+              <span>60-75 min</span>
+            </div>
+            <button class="plan-btn">Ver Planilha</button>
+          </div>
+
+          <div class="plan-card" data-plan="forca">
+            <div class="plan-level">Avançado</div>
+            <h2 class="plan-name">Força Total</h2>
+            <p class="plan-desc">Baseado no método 5x5. Foco em levantamentos compostos e progressão de carga.</p>
+            <div class="plan-meta">
+              <span>3x semana</span>
+              <span>8 semanas</span>
+              <span>50-60 min</span>
+            </div>
+            <button class="plan-btn">Ver Planilha</button>
+          </div>
+
+          <div class="plan-card" data-plan="emagrecimento">
+            <div class="plan-level">Iniciante</div>
+            <h2 class="plan-name">Queima Total</h2>
+            <p class="plan-desc">Treino full body com circuitos metabólicos para maximizar gasto calórico.</p>
+            <div class="plan-meta">
+              <span>5x semana</span>
+              <span>8 semanas</span>
+              <span>45-55 min</span>
+            </div>
+            <button class="plan-btn">Ver Planilha</button>
+          </div>
+
+          <div class="plan-card" data-plan="iniciante">
+            <div class="plan-level">Iniciante</div>
+            <h2 class="plan-name">Start Strong</h2>
+            <p class="plan-desc">Programa de adaptação muscular para quem está começando. Base sólida em 6 semanas.</p>
+            <div class="plan-meta">
+              <span>3x semana</span>
+              <span>6 semanas</span>
+              <span>40-50 min</span>
+            </div>
+            <button class="plan-btn">Ver Planilha</button>
+          </div>
+
+          <div class="plan-card" data-plan="resistencia">
+            <div class="plan-level">Intermediário</div>
+            <h2 class="plan-name">Resistência Elite</h2>
+            <p class="plan-desc">Combinação de musculação e condicionamento aeróbico para atletas completos.</p>
+            <div class="plan-meta">
+              <span>5x semana</span>
+              <span>10 semanas</span>
+              <span>60-90 min</span>
+            </div>
+            <button class="plan-btn">Ver Planilha</button>
+          </div>
+
+          <div class="plan-card" data-plan="funcional">
+            <div class="plan-level">Todos</div>
+            <h2 class="plan-name">Funcional Pro</h2>
+            <p class="plan-desc">Movimentos funcionais integrados para melhorar performance e mobilidade geral.</p>
+            <div class="plan-meta">
+              <span>4x semana</span>
+              <span>8 semanas</span>
+              <span>45-60 min</span>
+            </div>
+            <button class="plan-btn">Ver Planilha</button>
+          </div>
+
+        </div>
+
+        <!-- PLAN DETAIL MODAL -->
+        <div class="modal hidden" id="planModal">
+          <div class="modal-backdrop" id="planModalBackdrop"></div>
+          <div class="modal-box">
+            <button class="modal-close" id="planModalClose">&#10005;</button>
+            <div id="planModalContent"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: EXERCISES -->
+      <section class="page" id="page-exercises">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Biblioteca de <span class="accent">Exercícios</span></h1>
+            <p class="page-sub">Técnica, postura e execução correta</p>
+          </div>
+        </div>
+        <div class="exercise-filters">
+          <button class="filter-btn active" data-filter="all">Todos</button>
+          <button class="filter-btn" data-filter="peito">Peito</button>
+          <button class="filter-btn" data-filter="costas">Costas</button>
+          <button class="filter-btn" data-filter="pernas">Pernas</button>
+          <button class="filter-btn" data-filter="ombros">Ombros</button>
+          <button class="filter-btn" data-filter="biceps">Bíceps</button>
+          <button class="filter-btn" data-filter="triceps">Tríceps</button>
+          <button class="filter-btn" data-filter="abdomen">Abdômen</button>
+        </div>
+        <div class="exercises-grid" id="exercisesGrid"></div>
+
+        <!-- EXERCISE DETAIL MODAL -->
+        <div class="modal hidden" id="exerciseModal">
+          <div class="modal-backdrop" id="exerciseModalBackdrop"></div>
+          <div class="modal-box large">
+            <button class="modal-close" id="exerciseModalClose">&#10005;</button>
+            <div id="exerciseModalContent"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: BUILDER -->
+      <section class="page" id="page-builder">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Montar <span class="accent">Treino</span></h1>
+            <p class="page-sub">Crie seu programa personalizado</p>
+          </div>
+        </div>
+        <div class="builder-layout">
+          <div class="builder-left">
+            <div class="builder-card">
+              <h3 class="builder-section-title">Configuração do Treino</h3>
+              <div class="form-group">
+                <label class="form-label">Nome do Treino</label>
+                <input type="text" class="form-input" id="builderName" placeholder="Ex: Meu Treino A" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Objetivo</label>
+                <select class="form-input" id="builderGoal">
+                  <option value="">Selecione...</option>
+                  <option>Hipertrofia</option>
+                  <option>Força</option>
+                  <option>Emagrecimento</option>
+                  <option>Resistência</option>
+                  <option>Funcional</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Séries padrão</label>
+                  <input type="number" class="form-input" id="defaultSets" value="3" min="1" max="10" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Reps padrão</label>
+                  <input type="text" class="form-input" id="defaultReps" value="10-12" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Descanso (seg)</label>
+                <input type="number" class="form-input" id="defaultRest" value="60" min="15" max="300" />
+              </div>
+            </div>
+
+            <div class="builder-card">
+              <h3 class="builder-section-title">Adicionar Exercício</h3>
+              <div class="form-group">
+                <label class="form-label">Grupo muscular</label>
+                <select class="form-input" id="addGroup" onchange="filterBuilderExercises()">
+                  <option value="">Todos</option>
+                  <option value="peito">Peito</option>
+                  <option value="costas">Costas</option>
+                  <option value="pernas">Pernas</option>
+                  <option value="ombros">Ombros</option>
+                  <option value="biceps">Bíceps</option>
+                  <option value="triceps">Tríceps</option>
+                  <option value="abdomen">Abdômen</option>
+                </select>
+              </div>
+              <div class="exercise-picker" id="exercisePicker"></div>
+            </div>
+          </div>
+
+          <div class="builder-right">
+            <div class="builder-card full-height">
+              <div class="builder-right-header">
+                <h3 class="builder-section-title">Seu Treino</h3>
+                <div class="builder-actions">
+                  <button class="action-btn" id="clearPlanBtn">Limpar</button>
+                  <button class="action-btn primary" id="savePlanBtn">Salvar Treino</button>
+                </div>
+              </div>
+              <div class="workout-list" id="workoutList">
+                <div class="empty-workout">
+                  <div class="empty-icon">&#9635;</div>
+                  <p>Adicione exercícios ao seu treino</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAVED PLANS -->
+        <div class="saved-plans-section" id="savedPlansSection" style="display:none">
+          <h2 class="section-title-lg">Treinos Salvos</h2>
+          <div class="saved-plans-grid" id="savedPlansGrid"></div>
+        </div>
+      </section>
+
+      <!-- PAGE: PROGRESS -->
+      <section class="page" id="page-progress">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Meu <span class="accent">Progresso</span></h1>
+            <p class="page-sub">Acompanhe sua evolução semana a semana</p>
+          </div>
+          <button class="action-btn primary" id="openCheckInBtn">+ Novo Registro</button>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="progress-stats" id="progressStats">
+          <div class="stat-card">
+            <div class="stat-label">Peso Atual</div>
+            <div class="stat-value" id="statWeight">—</div>
+            <div class="stat-delta" id="statWeightDelta"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">IMC</div>
+            <div class="stat-value" id="statImc">—</div>
+            <div class="stat-delta" id="statImcLabel"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">% Gordura</div>
+            <div class="stat-value" id="statFat">—</div>
+            <div class="stat-delta" id="statFatDelta"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Registros</div>
+            <div class="stat-value" id="statCount">0</div>
+            <div class="stat-delta">total</div>
+          </div>
+        </div>
+
+        <!-- CHART -->
+        <div class="progress-chart-section">
+          <div class="progress-chart-header">
+            <span class="chart-title">Evolução do Peso</span>
+            <div class="chart-tabs">
+              <button class="chart-tab active" data-metric="weight">Peso</button>
+              <button class="chart-tab" data-metric="fat">% Gordura</button>
+              <button class="chart-tab" data-metric="muscle">Músculo</button>
+            </div>
+          </div>
+          <div class="chart-area">
+            <canvas id="progressChart" height="200"></canvas>
+            <div class="chart-empty" id="chartEmpty">Nenhum registro ainda. Adicione seu primeiro check-in!</div>
+          </div>
+        </div>
+
+        <!-- MEASUREMENTS + HISTORY -->
+        <div class="progress-bottom">
+          <div class="measurements-card">
+            <h3 class="prog-section-title">Medidas Corporais</h3>
+            <div class="measurements-grid" id="measurementsGrid">
+              <div class="measure-row"><span class="measure-name">Peito</span><span class="measure-val" id="mChest">—</span></div>
+              <div class="measure-row"><span class="measure-name">Cintura</span><span class="measure-val" id="mWaist">—</span></div>
+              <div class="measure-row"><span class="measure-name">Quadril</span><span class="measure-val" id="mHip">—</span></div>
+              <div class="measure-row"><span class="measure-name">Braço D.</span><span class="measure-val" id="mArmR">—</span></div>
+              <div class="measure-row"><span class="measure-name">Braço E.</span><span class="measure-val" id="mArmL">—</span></div>
+              <div class="measure-row"><span class="measure-name">Coxa D.</span><span class="measure-val" id="mThighR">—</span></div>
+              <div class="measure-row"><span class="measure-name">Coxa E.</span><span class="measure-val" id="mThighL">—</span></div>
+              <div class="measure-row"><span class="measure-name">Panturrilha</span><span class="measure-val" id="mCalf">—</span></div>
+            </div>
+          </div> 
+
+          <div class="history-card">
+            <h3 class="prog-section-title">Histórico de Registros</h3>
+            <div class="history-list" id="historyList">
+              <div class="history-empty">Nenhum registro ainda</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHECK-IN MODAL -->
+      <div class="modal hidden" id="checkInModal">
+        <div class="modal-backdrop" id="checkInBackdrop"></div>
+        <div class="modal-box" style="max-width:560px;">
+          <button class="modal-close" id="checkInClose">&#10005;</button>
+          <h2 class="modal-title-main">Novo Check-in</h2>
+          <p style="font-size:13px;color:var(--gray3);margin-bottom:24px;">Registre seu progresso de hoje</p>
+
+          <div class="checkin-grid">
+            <div class="form-group">
+              <label class="form-label">Data</label>
+              <input type="date" class="form-input" id="ciDate" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Peso (kg)</label>
+              <input type="number" class="form-input" id="ciWeight" placeholder="Ex: 80.5" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Altura (cm)</label>
+              <input type="number" class="form-input" id="ciHeight" placeholder="Ex: 175" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">% Gordura</label>
+              <input type="number" class="form-input" id="ciFat" placeholder="Ex: 18" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">% Músculo</label>
+              <input type="number" class="form-input" id="ciMuscle" placeholder="Ex: 42" step="0.1" />
+            </div>
+          </div>
+
+          <div class="checkin-divider">Medidas (cm) — opcional</div>
+          <div class="checkin-grid">
+            <div class="form-group"><label class="form-label">Peito</label><input type="number" class="form-input" id="ciChest" placeholder="cm" /></div>
+            <div class="form-group"><label class="form-label">Cintura</label><input type="number" class="form-input" id="ciWaist" placeholder="cm" /></div>
+            <div class="form-group"><label class="form-label">Quadril</label><input type="number" class="form-input" id="ciHip" placeholder="cm" /></div>
+            <div class="form-group"><label class="form-label">Braço D.</label><input type="number" class="form-input" id="ciArmR" placeholder="cm" /></div>
+            <div class="form-group"><label class="form-label">Braço E.</label><input type="number" class="form-input" id="ciArmL" placeholder="cm" /></div>
+            <div class="form-group"><label class="form-label">Coxa D.</label><input type="number" class="form-input" id="ciThighR" placeholder="cm" /></div>
+            <div class="form-group"><label class="form-label">Coxa E.</label><input type="number" class="form-input" id="ciThighL" placeholder="cm" /></div>
+            <div class="form-group"><label class="form-label">Panturrilha</label><input type="number" class="form-input" id="ciCalf" placeholder="cm" /></div>
+          </div>
+
+          <div class="form-group" style="margin-top:8px;">
+            <label class="form-label">Observações</label>
+            <textarea class="form-input" id="ciNotes" rows="2" placeholder="Como foi a semana? Disposição, sono, stress..."></textarea>
+          </div>
+
+          <button class="save-checkin-btn" id="saveCheckInBtn">Salvar Check-in 💪</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="src/config.js" defer></script>
+  <script src="src/payments.js" defer></script>
+  <script src="src/plan-config.js" defer></script>
+  <script src="gifs-data.js" defer></script>
+  
+  <!-- IRONFIT Core Data -->
+  <script src="script.js" defer></script>
+  <!-- Removidos módulos duplicados em src/ para evitar conflitos de declaração -->
+
+  <script>
+    // Sem login obrigatório - funciona offline
+    console.log('App rodando em modo standalone');
+
+  </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('SW registrado com sucesso'))
+      .catch(err => console.log('Erro no SW:', err));
+  }
+</script>
+</body>
+</html>

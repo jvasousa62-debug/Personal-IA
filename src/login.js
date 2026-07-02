@@ -101,7 +101,7 @@ async function login() {
                 window.location.href = 'academy/';
             } else {
                 localStorage.removeItem('ironfit_userRole');
-                window.location.href = 'index.html';
+                window.location.href = 'app-main.html';
             }
         }
     } catch (err) {
@@ -166,7 +166,7 @@ async function register() {
             
             clearErrors();
             // Redirecionar ou mostrar mensagem de confirmação de email
-            window.location.href = 'index.html';
+            window.location.href = 'app-main.html';
         }
     } catch (err) {
         showError('email', 'Erro no cadastro: ' + (err.message || 'Tente novamente'));
@@ -318,7 +318,7 @@ async function checkIfLoggedIn() {
                 window.location.href = 'academy/';
             } else {
                 localStorage.removeItem('ironfit_userRole');
-                window.location.href = 'index.html';
+                window.location.href = 'app-main.html';
             }
         }
     } catch (err) {

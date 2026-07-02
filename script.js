@@ -1871,7 +1871,7 @@ async function login() {
       if (profile?.role === 'admin' && profile?.account_status === 'active') {
         window.location.href = 'admin/';
       } else {
-        window.location.href = 'index.html';
+        window.location.href = 'app-main.html';
       }
     }
   } catch (err) { alert('Erro na autenticação: ' + err.message); }
@@ -2066,6 +2066,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const app = document.getElementById('app');
   if (app) app.classList.remove('hidden');
+
+  // Verificar subscription - sem Stripe, mostra modal
+  if (window.PaymentModule) {
+    await window.PaymentModule.verifySubscriptionAccess();
+  }
 
   try {
     // Guards: só setar listeners se os elementos existirem na página atual

@@ -1,5 +1,5 @@
 // IRONFIT Service Worker - Cache First com Network Fallback
-const CACHE_VERSION = 'ironfit-v3';
+const CACHE_VERSION = 'ironfit-v4';
 const RUNTIME_CACHE = 'ironfit-runtime';
 
 const ASSETS_TO_CACHE = [
