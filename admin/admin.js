@@ -202,8 +202,8 @@
   }
 
   function renderMetrics() {
-    const activeUsers = state.users.filter((u) => u.account_status === 'active').length;
-    const blockedUsers = state.users.filter((u) => u.account_status === 'blocked').length;
+    const activeUsers = state.users.filter((u) => u.account_status === 'active' && u.role !== 'admin').length;
+    const blockedUsers = state.users.filter((u) => u.account_status === 'blocked' && u.role !== 'admin').length;
     const activeAcademies = state.academies.filter((a) => a.status === 'active').length;
     const activeManualPlans = state.academies.filter((academy) => academy.status === 'active');
     const monthly = activeManualPlans.reduce((sum, academy) => sum + planMonthlyAmount(academy.plan), 0);
@@ -226,7 +226,11 @@
 
   function renderUsers() {
     const query = ($('#userSearch')?.value || '').toLowerCase();
-    const users = state.users.filter((user) => {
+    
+    // FILTRO: Excluir admins da lista
+    const nonAdminUsers = state.users.filter((user) => user.role !== 'admin');
+    
+    const users = nonAdminUsers.filter((user) => {
       const text = `${user.full_name || ''} ${user.email || ''}`.toLowerCase();
       return text.includes(query);
     });
@@ -259,7 +263,7 @@
           </td>
           <td>
             <select class="admin-select" data-field="role">
-              ${['member', 'academy_owner', 'admin'].map((role) => `<option value="${role}" ${role === (user.role || 'member') ? 'selected' : ''}>${roleLabel(role)}</option>`).join('')}
+              ${['member', 'academy_owner'].map((role) => `<option value="${role}" ${role === (user.role || 'member') ? 'selected' : ''}>${roleLabel(role)}</option>`).join('')}
             </select>
           </td>
           <td>
@@ -532,8 +536,9 @@
     const ownerSelect = $('#academyOwnerUserId');
     if (!ownerSelect) return;
 
+    // FILTRO: Excluir admins da lista de donos
     const activeOwners = state.users
-      .filter((user) => user.account_status === 'active')
+      .filter((user) => user.account_status === 'active' && user.role !== 'admin')
       .sort((a, b) => (a.full_name || a.email || '').localeCompare(b.full_name || b.email || ''));
 
     ownerSelect.innerHTML = ['<option value="">Sem dono definido</option>']
