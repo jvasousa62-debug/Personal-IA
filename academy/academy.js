@@ -109,7 +109,10 @@
     const storedRole = (localStorage.getItem('ironfit_userRole') || '').toLowerCase();
     const role = (profile?.role || storedRole || '').toLowerCase();
     const accountStatus = profile?.account_status || 'active';
-    const canAccessAcademy = ['academy_owner', 'admin'].includes(role) && accountStatus === 'active';
+    const isAdmin = role === 'admin';
+    const isAcademyOwner = role === 'academy_owner';
+    
+    const canAccessAcademy = (isAdmin || isAcademyOwner) && accountStatus === 'active';
 
     if (!canAccessAcademy) {
       denyAccess('Sua conta nao esta ativa ou nao tem permissao para gerir uma academia.');

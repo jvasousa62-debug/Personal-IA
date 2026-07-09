@@ -378,31 +378,57 @@
 
   async function updateUser(row, patch) {
     const userId = row.dataset.userId;
+    
+    if (!patch || Object.keys(patch).length === 0) {
+      showAlert('Nenhuma alteracao para salvar.', 'info');
+      return;
+    }
+
     if (patch.plan) {
       patch.plan = normalizePlan(patch.plan);
       patch.ai_monthly_tokens_limit = planTokenLimit(patch.plan);
     }
-    const { error } = await state.client
+
+    patch.updated_at = new Date().toISOString();
+
+    console.log('Salvando usuario:', userId, patch);
+
+    const { data, error } = await state.client
       .from('user_profiles')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
+      .update(patch)
+      .eq('user_id', userId)
+      .select('user_id');
 
     if (error) {
-      showAlert(`Erro ao salvar usuario: ${error.message}`, 'error');
+      console.error('Erro Supabase:', error);
+      showAlert(`Erro ao salvar: ${error.message}`, 'error');
       return;
     }
 
-    showAlert('Usuario atualizado.');
+    if (!data || data.length === 0) {
+      showAlert('Nao foi possivel salvar o usuario.', 'warning');
+      return;
+    }
+
+    showAlert('Usuario atualizado com sucesso.');
     await refreshData();
   }
 
   function collectUserPatch(row) {
     const patch = {};
-    row.querySelectorAll('[data-field]').forEach((field) => {
-      patch[field.dataset.field] = field.value || null;
+    const fields = ['academy_id', 'plan', 'account_status', 'role'];
+    
+    fields.forEach((fieldName) => {
+      const input = row.querySelector(`[data-field="${fieldName}"]`);
+      if (input) {
+        const value = input.value;
+        patch[fieldName] = (value === '' || value === 'null') ? null : value;
+      }
     });
+    
     if (patch.account_status === 'blocked') patch.blocked_at = new Date().toISOString();
     if (patch.account_status === 'deleted') patch.deleted_at = new Date().toISOString();
+    
     return patch;
   }
 
@@ -567,7 +593,7 @@
     ];
     logoutKeys.forEach((key) => localStorage.removeItem(key));
 
-    const authClient = state.client?.auth || window.supabaseClient?.auth || (window.supabase && window.IronFitConfig?.SUPABASE_CONFIG ? window.supabase.createClient(window.IronFitConfig.SUPABASE_CONFIG.url, window.IronFitConfig.SUPABASE_CONFIG.key).auth : null);
+    const authClient = state.client?.auth || window.supabaseClient?.auth || (window.supabase && window.IronFitConfig?.SUPABASE_CONFIG ? window.supabase.createClient(window.IronFitConfig.SUPABASE_CONFIG.url, window.IronFitConfig.SUPABASE_CONFIG.key) : null);
     if (authClient?.signOut) {
       try {
         await authClient.signOut();
@@ -609,7 +635,8 @@
       const action = button.dataset.action;
 
       if (action === 'save-user') {
-        await updateUser(row, collectUserPatch(row));
+        const patch = collectUserPatch(row);
+        await updateUser(row, patch);
       }
 
       if (action === 'toggle-block') {
