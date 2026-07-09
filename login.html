@@ -508,11 +508,34 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script src="src/config.js"></script>
     <script src="src/payments.js"></script>
-    <script src="src/login.js"></script>
+    <!-- src/login.js contém lógica duplicada; removido para evitar conflito com o script inline abaixo -->
+    <!-- <script src="src/login.js"></script> -->
 
     <script>
+
         // Verificar se Supabase foi carregado
         let supabaseLib = null;
+        let supabaseClient = null;
+
+        function initSupabaseClient() {
+            const config = window.IronFitConfig?.SUPABASE_CONFIG;
+            const url = config?.url || document.querySelector('meta[name="supabase-url"]')?.content;
+            const key = config?.key || document.querySelector('meta[name="supabase-key"]')?.content;
+
+            if (!window.supabase || !url || !key) {
+                console.warn('Supabase indisponivel no login.');
+                return null;
+            }
+
+            try {
+                supabaseClient = window.supabase.createClient(url, key);
+                window.supabaseClient = supabaseClient;
+                return supabaseClient;
+            } catch (error) {
+                console.warn('Erro ao inicializar Supabase no login:', error);
+                return null;
+            }
+        }
 
         function getAuthRedirectUrl(pageName) {
             return new URL(pageName, window.location.href).href;
@@ -532,7 +555,7 @@
 
             const { data: profile, error } = await supabaseClient
                 .from('user_profiles')
-                .select('role,account_status')
+                .select('role,account_status,academy_id')
                 .eq('user_id', user.id)
                 .maybeSingle();
 
@@ -548,9 +571,12 @@
                     : 'Sua conta foi removida do app. Fale com o administrador.');
             }
 
-            localStorage.setItem('ironfit_userRole', profile?.role || 'member');
-            if (profile?.account_status === 'active' && profile?.role === 'admin') return 'admin/';
-            if (profile?.account_status === 'active' && profile?.role === 'academy_owner') return 'academy/';
+            const role = (profile?.role || 'member').toLowerCase();
+            const isActive = profile?.account_status === 'active';
+            localStorage.setItem('ironfit_userRole', role);
+
+            if (isActive && role === 'admin') return 'admin/';
+            if (isActive && role === 'academy_owner') return 'academy/';
 
             try {
                 const { data: academies } = await supabaseClient
@@ -578,6 +604,7 @@
         }
         try {
             supabaseLib = window.supabase;
+            initSupabaseClient();
             console.log('✅ Supabase JS carregado:', supabaseLib ? 'OK' : 'FALHOU');
         } catch (e) {
             console.warn('⚠️ Erro ao carregar Supabase:', e);
@@ -637,6 +664,10 @@
 
             // Limpar mensagens de erro anteriores
             clearErrors();
+            localStorage.removeItem('ironfit_userRole');
+            localStorage.removeItem('ironfit_loggedIn');
+            localStorage.removeItem('ironfit_userEmail');
+            localStorage.removeItem('ironfit_userId');
 
             // Validações
             if (!email) {
@@ -815,17 +846,6 @@
         // Verificar se já está logado
 
         async function checkIfLoggedIn() {
-            const loggedInLocal = localStorage.getItem('ironfit_loggedIn') === 'true';
-            const userEmailLocal = localStorage.getItem('ironfit_userEmail');
-            const localRole = localStorage.getItem('ironfit_userRole');
-
-            if (loggedInLocal && userEmailLocal) {
-                if (localRole === 'admin') window.location.href = 'admin/';
-                else if (localRole === 'academy_owner') window.location.href = 'academy/';
-                else window.location.href = 'index.html';
-                return;
-            }
-
             if (!supabaseClient) return;
 
             try {

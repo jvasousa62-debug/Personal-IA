@@ -112,6 +112,7 @@
                 <thead>
                   <tr>
                     <th>Academia</th>
+                    <th>Plano</th>
                     <th>Codigo</th>
                     <th>Alunos</th>
                     <th>Validade</th>
@@ -129,7 +130,7 @@
           <div class="admin-grid two">
             <article class="admin-panel">
               <div class="admin-panel-head">
-                <h2>Assinaturas</h2>
+                <h2>Planos das academias</h2>
               </div>
               <div class="admin-table-wrap">
                 <table class="admin-table">
@@ -171,6 +172,14 @@
       <label>Dono da academia
         <select class="admin-input" id="academyOwnerUserId">
           <option value="">Sem dono definido</option>
+        </select>
+      </label>
+      <label>Plano contratado
+        <select class="admin-input" id="academyPlan">
+          <option value="basic">Plano Simples</option>
+          <option value="pro">Plano Pro</option>
+          <option value="premium">Plano Premium</option>
+          <option value="enterprise">Plano Enterprise</option>
         </select>
       </label>
       <label>Codigo de acesso

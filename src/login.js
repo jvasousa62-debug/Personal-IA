@@ -114,63 +114,131 @@ async function login() {
 // REGISTER FORM
 // ===========================
 async function register() {
-    const name = document.getElementById('name')?.value.trim() || '';
+    const fullname = document.getElementById('fullname')?.value.trim() || '';
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+    const academyName = document.getElementById('academyName')?.value.trim() || '';
+    const academyCode = document.getElementById('academyCode')?.value.trim().toUpperCase() || '';
 
     // Validações
     let hasError = false;
     
-    if (name && !window.IronFitConfig?.validateName(name)) {
-        showError('name', 'Nome deve ter 2-100 caracteres (letras, espaço, apóstrofo)');
+    if (!fullname || fullname.length < 3) {
+        showError('fullnameError', 'Nome deve ter no mínimo 3 caracteres');
         hasError = true;
     }
 
     if (!email || !window.IronFitConfig?.validateEmail(email)) {
-        showError('email', 'Email inválido');
+        showError('emailError', 'Email inválido');
+        hasError = true;
+    }
+
+    if (!academyName || academyName.length < 2) {
+        showError('academyNameError', 'Nome da academia é obrigatório (mínimo 2 caracteres)');
+        hasError = true;
+    }
+
+    if (!academyCode || academyCode.length < 3) {
+        showError('academyCodeError', 'Código da academia é obrigatório (mínimo 3 caracteres)');
         hasError = true;
     }
 
     if (!password || !window.IronFitConfig?.validatePassword(password)) {
-        showError('password', 'Senha deve ter 8+ caracteres, 1 maiúscula, 1 minúscula, 1 número');
+        showError('passwordError', 'Senha deve ter 8+ caracteres, 1 maiúscula, 1 minúscula, 1 número');
         hasError = true;
     }
 
     if (confirmPassword && password !== confirmPassword) {
-        showError('confirmPassword', 'As senhas não conferem');
+        showError('confirmPasswordError', 'As senhas não conferem');
         hasError = true;
     }
 
     if (hasError) return;
 
-    // Sanitizar
-    const sanitizedName = window.IronFitConfig?.sanitizeInput(name);
-    const sanitizedEmail = window.IronFitConfig?.sanitizeInput(email);
-
     try {
-        const { data, error } = await supabaseClient.auth.signUp({
+        // Sanitizar
+        const sanitizedEmail = window.IronFitConfig?.sanitizeInput(email);
+        const sanitizedName = window.IronFitConfig?.sanitizeInput(fullname);
+        const sanitizedAcademyName = window.IronFitConfig?.sanitizeInput(academyName);
+
+        // O trigger app_private.handle_new_user valida academy_code e vincula
+        // o perfil sem expor a tabela academies para usuarios anonimos.
+        const { data, error: signupError } = await supabaseClient.auth.signUp({
             email: sanitizedEmail,
             password: password,
             options: {
-                data: { name: sanitizedName }
+                data: {
+                    full_name: sanitizedName,
+                    academy_name: sanitizedAcademyName,
+                    academy_code: academyCode
+                }
             }
         });
 
-        if (error) throw error;
+        if (signupError) throw signupError;
 
         if (data.user) {
             localStorage.setItem('userEmail', data.user.email);
             localStorage.setItem('userId', data.user.id);
-            if (sanitizedName) localStorage.setItem('userName', sanitizedName);
+            localStorage.setItem('userName', sanitizedName);
             
             clearErrors();
-            // Redirecionar ou mostrar mensagem de confirmação de email
-            window.location.href = 'app-main.html';
+            
+            // Mostrar modal de confirmação de email e redirecionar
+            showEmailConfirmation(sanitizedEmail);
+            
+            // Redirecionar após 3 segundos
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 3000);
         }
     } catch (err) {
-        showError('email', 'Erro no cadastro: ' + (err.message || 'Tente novamente'));
-        console.error(err);
+        const message = err?.message || '';
+        const lowerMessage = message.toLowerCase();
+
+        if (lowerMessage.includes('academia') || lowerMessage.includes('academy')) {
+            showError('academyCodeError', message);
+        } else if (lowerMessage.includes('database error saving new user')) {
+            showError('academyCodeError', 'Nao foi possivel validar o codigo da academia. Verifique o codigo ou fale com o responsavel.');
+        } else {
+            showError('academyCodeError', 'Erro no cadastro: ' + (message || 'Tente novamente'));
+        }
+        console.error('Register error:', err);
+    }
+}
+
+function showEmailConfirmation(email) {
+    const modal = document.getElementById('emailConfirmationModal');
+    if (modal) {
+        document.getElementById('confirmationEmail').textContent = email;
+        modal.classList.add('show');
+    }
+}
+
+function goToLogin() {
+    window.location.href = 'login.html';
+}
+
+async function resendConfirmationEmail() {
+    const email = localStorage.getItem('userEmail');
+    if (!email) {
+        alert('Email não encontrado. Faça login novamente.');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.auth.resend({
+            type: 'signup',
+            email: email
+        });
+
+        if (error) throw error;
+        alert('Email de confirmação reenviado! Verifique sua caixa de entrada.');
+    } catch (err) {
+        alert('Erro ao reenviar email: ' + (err.message || 'Tente novamente'));
+        console.error('Resend error:', err);
     }
 }
 

@@ -380,6 +380,64 @@ serve(async (req) => {
 
   if (userError || !user) return jsonResponse({ error: 'Invalid token' }, 401);
 
+  // ===========================
+  // CHECK TOKEN LIMITS
+  // ===========================
+  let userProfile: any = null;
+  try {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('academy_id, ai_monthly_tokens_limit, ai_tokens_used_this_month, ai_tokens_reset_at, plan')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    userProfile = data;
+  } catch (err) {
+    console.error('[chat-ai] Error fetching user profile:', err);
+    return jsonResponse({ error: 'Failed to check token limits' }, 500);
+  }
+
+  if (!userProfile) {
+    return jsonResponse({ error: 'User profile not found' }, 404);
+  }
+
+  // Reset monthly tokens if 30+ days have passed
+  if (userProfile.ai_tokens_reset_at) {
+    const resetDate = new Date(userProfile.ai_tokens_reset_at);
+    const now = new Date();
+    const daysSinceReset = (now.getTime() - resetDate.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysSinceReset >= 30) {
+      await supabase
+        .from('user_profiles')
+        .update({
+          ai_tokens_used_this_month: 0,
+          ai_tokens_reset_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .catch((err) => console.error('[chat-ai] Error resetting tokens:', err));
+      
+      userProfile.ai_tokens_used_this_month = 0;
+    }
+  }
+
+  const tokensAvailable = userProfile.ai_monthly_tokens_limit - userProfile.ai_tokens_used_this_month;
+  
+  // Estimate tokens needed (rough estimation: 1 token ≈ 4 characters)
+  const estimatedInputTokens = Math.ceil((message.length + 
+    history.reduce((sum, msg) => sum + msg.content.length, 0) + 
+    buildTrainerPrompt(requestProfile, requestProfile, requestPreferences).length) / 4);
+  
+  // Check if user has enough tokens (reserve 500 tokens for response)
+  if (tokensAvailable < estimatedInputTokens + 500) {
+    return jsonResponse({ 
+      error: 'Token limit reached for this month',
+      tokensAvailable,
+      tokensNeeded: estimatedInputTokens + 500,
+      plan: userProfile.plan
+    }, 429);
+  }
+
   let bodyData: any = requestProfile;
 
   try {
@@ -410,9 +468,13 @@ serve(async (req) => {
     { role: 'user' as const, content: message },
   ];
 
+  let aiText = '';
+  let inputTokensUsed = 0;
+  let outputTokensUsed = 0;
+
   try {
     let finalRoute = route;
-    let aiText = await callProvider(finalRoute, systemPrompt, messages);
+    aiText = await callProvider(finalRoute, systemPrompt, messages);
 
     if (!aiText) {
       const backup = fallbackRoute(finalRoute, openaiKey, anthropicKey);
@@ -421,11 +483,58 @@ serve(async (req) => {
       aiText = await callProvider(finalRoute, systemPrompt, messages);
     }
 
+    // ===========================
+    // ESTIMATE TOKENS USED
+    // ===========================
+    // Rough estimation: 1 token ≈ 4 characters
+    inputTokensUsed = Math.ceil(
+      (message.length + 
+        history.reduce((sum, msg) => sum + msg.content.length, 0) + 
+        systemPrompt.length) / 4
+    );
+    outputTokensUsed = Math.ceil(aiText.length / 4);
+    const totalTokensUsed = inputTokensUsed + outputTokensUsed;
+
+    // ===========================
+    // LOG USAGE
+    // ===========================
+    try {
+      await supabase
+        .from('ai_usage_logs')
+        .insert({
+          user_id: user.id,
+          academy_id: userProfile.academy_id,
+          tokens_used: totalTokensUsed,
+          input_tokens: inputTokensUsed,
+          output_tokens: outputTokensUsed,
+          model: finalRoute.model,
+          request_type: 'chat',
+          status: 'success',
+          metadata: {
+            difficulty: finalRoute.difficulty,
+            provider: finalRoute.provider
+          }
+        });
+
+      // Update user profile with new token count
+      await supabase
+        .from('user_profiles')
+        .update({
+          ai_tokens_used_this_month: userProfile.ai_tokens_used_this_month + totalTokensUsed
+        })
+        .eq('user_id', user.id);
+    } catch (logError) {
+      console.error('[chat-ai] Error logging usage:', logError);
+      // Don't fail the request if logging fails
+    }
+
     return jsonResponse({
       reply: aiText,
       provider: finalRoute.provider,
       model: finalRoute.model,
       difficulty: finalRoute.difficulty,
+      tokensUsed: totalTokensUsed,
+      tokensRemaining: tokensAvailable - totalTokensUsed
     });
   } catch (error) {
     if (error instanceof ProviderError) {
@@ -433,18 +542,58 @@ serve(async (req) => {
 
       if (backup) {
         try {
-          const aiText = await callProvider(backup, systemPrompt, messages);
+          aiText = await callProvider(backup, systemPrompt, messages);
           if (aiText) {
+            // Log usage for backup provider
+            inputTokensUsed = Math.ceil(
+              (message.length + 
+                history.reduce((sum, msg) => sum + msg.content.length, 0) + 
+                systemPrompt.length) / 4
+            );
+            outputTokensUsed = Math.ceil(aiText.length / 4);
+            const totalTokensUsed = inputTokensUsed + outputTokensUsed;
+
+            try {
+              await supabase
+                .from('ai_usage_logs')
+                .insert({
+                  user_id: user.id,
+                  academy_id: userProfile.academy_id,
+                  tokens_used: totalTokensUsed,
+                  input_tokens: inputTokensUsed,
+                  output_tokens: outputTokensUsed,
+                  model: backup.model,
+                  request_type: 'chat',
+                  status: 'success',
+                  metadata: {
+                    difficulty: backup.difficulty,
+                    provider: backup.provider,
+                    fallbackFrom: route.provider
+                  }
+                });
+
+              await supabase
+                .from('user_profiles')
+                .update({
+                  ai_tokens_used_this_month: userProfile.ai_tokens_used_this_month + totalTokensUsed
+                })
+                .eq('user_id', user.id);
+            } catch (logError) {
+              console.error('[chat-ai] Error logging backup usage:', logError);
+            }
+
             return jsonResponse({
               reply: aiText,
               provider: backup.provider,
               model: backup.model,
               difficulty: backup.difficulty,
               fallbackFrom: route.provider,
+              tokensUsed: totalTokensUsed,
+              tokensRemaining: tokensAvailable - totalTokensUsed
             });
           }
         } catch {
-          // Mantem o erro do provedor original abaixo, geralmente mais util.
+          // Keep original error below
         }
       }
 

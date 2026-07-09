@@ -1,11 +1,23 @@
 /* ===========================
    IRONFIT — PAYMENT MODULE
-   Handles Stripe integration and subscription verification
+   DEPRECATED: Stripe integration temporarily disabled
+   
+   This module is no longer active. The app now uses academy code
+   validation instead of payment processing.
+   
+   The code below is preserved for future use when integrating Stripe
+   for multi-academy deployments.
+   
+   Subscription verification is now handled by:
+   - Academy code validation at registration
+   - User profile.plan field (set to academy's plan)
+   - Token limits based on plan type
    =========================== */
 
 // ===========================
-// STRIPE CONFIGURATION
-// =========================== 
+// STRIPE CONFIGURATION (DISABLED)
+// ===========================
+/* COMMENTED OUT - Stripe disabled for now
 const STRIPE_CONFIG = {
   enabled: false, // Set to true when Stripe is ready
   publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
@@ -15,6 +27,7 @@ const STRIPE_CONFIG = {
     enterprise: process.env.STRIPE_PRICE_ENTERPRISE || ''
   }
 };
+*/
 
 // ===========================
 // SUBSCRIPTION PLANS
@@ -418,8 +431,9 @@ function renderPlanCards() {
 }
 
 // ===========================
-// SELECT PLAN & REDIRECT TO STRIPE
-// =========================== 
+// SELECT PLAN & REDIRECT TO STRIPE (DISABLED)
+// ===========================
+/* COMMENTED OUT - Stripe disabled for now
 async function selectPlan(planType) {
   if (!STRIPE_CONFIG.enabled) {
     alert('✨ A integração com Stripe será habilitada em breve!\n\nEste é o plano: ' + SUBSCRIPTION_PLANS[planType].name);
@@ -456,35 +470,52 @@ async function selectPlan(planType) {
     alert('Erro ao processar. Tente novamente.');
   }
 }
+*/
+
+// REPLACEMENT: Simple placeholder for future Stripe integration
+function selectPlan(planType) {
+  console.log('selectPlan() called for:', planType);
+  console.log('Note: Stripe integration is currently disabled.');
+  console.log('Users must register with a valid academy code.');
+}
 
 // ===========================
-// VERIFY SUBSCRIPTION ON PAGE LOAD
-// Call this after login to check subscription status
+// VERIFY SUBSCRIPTION ON PAGE LOAD (SIMPLIFIED)
+// Since Stripe is disabled, this now just verifies the user has an academy_id
 // =========================== 
 async function verifySubscriptionAccess() {
   const userId = localStorage.getItem('userId');
   
   if (!userId) {
-    console.warn('No user ID found');
-    return false;
+    // Sem user ID, deixa carregar. Login vai redirecionar conforme necessário
+    return true;
   }
 
-  const subscription = await checkSubscriptionStatus(userId);
+  try {
+    // Check if user has an academy_id (assigned during registration)
+    if (window.supabaseClient) {
+      const { data: profile, error } = await window.supabaseClient
+        .from('user_profiles')
+        .select('academy_id')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-  if (!subscription.hasActiveSubscription) {
-    console.warn('⚠️ Usuário sem plano ativo. Mostrando modal de planos.');
-    showSubscriptionModal();
-    
-    // Bloquear acesso à aplicação
-    setTimeout(() => {
-      const appWrapper = document.getElementById('app');
-      if (appWrapper) {
-        appWrapper.style.pointerEvents = 'none';
-        appWrapper.style.opacity = '0.5';
+      if (error) {
+        console.warn('Error checking academy access:', error);
+        return true; // Allow access, let the page handle errors
       }
-    }, 100);
 
-    return false;
+      if (!profile || !profile.academy_id) {
+        console.warn('⚠️ Usuário sem academia vinculada.');
+        // User should have been created with academy_id, this shouldn't happen
+        return false;
+      }
+
+      return true;
+    }
+  } catch (err) {
+    console.error('Error in verifySubscriptionAccess:', err);
+    return true; // Allow access on error
   }
 
   return true;
@@ -492,12 +523,13 @@ async function verifySubscriptionAccess() {
 
 // ===========================
 // Export for use in other modules
+// Note: Stripe-related functions are now placeholders
 // =========================== 
 window.PaymentModule = {
-  checkSubscriptionStatus,
-  showSubscriptionModal,
-  selectPlan,
+  checkSubscriptionStatus: async () => ({ hasActiveSubscription: true, plan: null }),
+  showSubscriptionModal: () => console.log('showSubscriptionModal disabled'),
+  selectPlan: () => console.log('selectPlan disabled - using academy codes instead'),
   verifySubscriptionAccess,
   SUBSCRIPTION_PLANS,
-  STRIPE_CONFIG
+  STRIPE_CONFIG: { enabled: false }
 };

@@ -615,7 +615,9 @@
 
         <div id="alertBox" class="alert"></div>
 
-        <form id="registerForm" onsubmit="handleRegister(event)">
+        <form id="registerForm" onsubmit="handleRegister(event)" autocomplete="off">
+
+
             <div class="form-group">
                 <label for="fullname">Nome Completo</label>
                 <input 
@@ -639,11 +641,36 @@
             </div>
 
             <div class="form-group">
+                <label for="academyName">Nome da Academia</label>
+                <input 
+                    type="text" 
+                    id="academyName" 
+                    placeholder="Ex: Academia PowerFit"
+                    required
+                />
+                <div class="error-message" id="academyNameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="academyCode">Código da Academia</label>
+                <input 
+                    type="text" 
+                    id="academyCode" 
+                    placeholder="Ex: POWER2026"
+                    maxlength="20"
+                    required
+                    onkeyup="this.value = this.value.toUpperCase()"
+                />
+                <div class="error-message" id="academyCodeError"></div>
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">Código fornecido pelo responsável da academia</div>
+            </div>
+
+            <div class="form-group">
                 <label for="password">Senha</label>
                 <div style="position: relative;">
-                    <input 
-                        type="password" 
-                        id="password" 
+                    <input
+                        type="password"
+                        id="password"
                         placeholder="••••••••"
                         minlength="8"
                         required
@@ -664,27 +691,34 @@
 
             <div class="form-group">
                 <label for="confirmPassword">Confirmar Senha</label>
-                <input 
-                    type="password" 
-                    id="confirmPassword" 
-                    placeholder="••••••••"
-                    required
-                />
+                <div style="position: relative;">
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        placeholder="••••••••"
+                        required
+                        style="padding-right: 48px;"
+                    />
+                    <button type="button" aria-label="Mostrar confirmação de senha" class="password-toggle" onclick="togglePassword('confirmPassword', this)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:transparent; color:#e8ff00; cursor:pointer; font-size:16px; padding:4px;">
+                        🔒
+                    </button>
+                </div>
+
                 <div class="error-message" id="confirmPasswordError"></div>
             </div>
-<div class="terms-group">
-    <input type="checkbox" id="termsCheck" required />
-    <label for="termsCheck" style="margin: 0;">
-        Concordo com os
-        <a href="legal/terms-of-use/" target="_blank" rel="noopener noreferrer">
-            Termos de Serviço
-        </a>
-        e
-        <a href="legal/privacy-policy/" target="_blank" rel="noopener noreferrer">
-            Política de Privacidade
-        </a>
-    </label>
-</div>
+            <div class="terms-group">
+                <input type="checkbox" id="termsCheck" required />
+                <label for="termsCheck" style="margin: 0;">
+                    Concordo com os
+                    <a href="legal/terms-of-use/" target="_blank" rel="noopener noreferrer">
+                        Termos de Serviço
+                    </a>
+                    e
+                    <a href="legal/privacy-policy/" target="_blank" rel="noopener noreferrer">
+                        Política de Privacidade
+                    </a>
+                </label>
+            </div>
 
             <button type="submit" class="register-btn" id="registerBtn">Criar Conta 💪</button>
         </form>
@@ -769,12 +803,14 @@
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
+            const academyName = document.getElementById('academyName').value.trim();
+            const academyCode = document.getElementById('academyCode').value.trim().toUpperCase();
             const termsCheck = document.getElementById('termsCheck').checked;
             const registerBtn = document.getElementById('registerBtn');
 
             clearErrors();
 
-            // Validações
+            // Validações locais
             if (!fullname) {
                 showError('fullnameError', 'Nome é obrigatório');
                 return;
@@ -792,6 +828,26 @@
 
             if (!isValidEmail(email)) {
                 showError('emailError', 'Email inválido');
+                return;
+            }
+
+            if (!academyName) {
+                showError('academyNameError', 'Nome da academia é obrigatório');
+                return;
+            }
+
+            if (academyName.length < 2) {
+                showError('academyNameError', 'Nome da academia deve ter no mínimo 2 caracteres');
+                return;
+            }
+
+            if (!academyCode) {
+                showError('academyCodeError', 'Código da academia é obrigatório');
+                return;
+            }
+
+            if (academyCode.length < 3) {
+                showError('academyCodeError', 'Código da academia deve ter no mínimo 3 caracteres');
                 return;
             }
 
@@ -815,41 +871,17 @@
                 return;
             }
 
-            // Fazer signup
+            // Desabilitar botão
             registerBtn.classList.add('loading');
             registerBtn.disabled = true;
             registerBtn.textContent = 'Criando conta... ⏳';
 
             try {
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: fullname
-                        }
-                    }
-                });
-
-                if (error) {
-                    if (error.message.includes('User already registered')) {
-                        showAlert('Email já cadastrado. Faça login ou use outro email', 'error');
-                    } else if (error.message.includes('weak password')) {
-                        showAlert('Senha muito fraca. Use maiúsculas, números e símbolos', 'error');
-                    } else {
-                        showAlert('Erro ao criar conta: ' + error.message, 'error');
-                    }
-                } else if (data && data.user) {
-                    // Armazenar dados do usuário
-                    localStorage.setItem('ironfit_userEmail', email);
-                    localStorage.setItem('ironfit_fullName', fullname);
-                    localStorage.setItem('ironfit_userId', data.user.id);
-                    
-                    // Mostrar modal de confirmação
-                    showConfirmationModal(email);
-                }
+                // Chamar função de registro do login.js que trata tudo
+                await register();
             } catch (err) {
-                showAlert('Erro na conexão: ' + err.message, 'error');
+                showAlert('Erro inesperado: ' + err.message, 'error');
+                console.error('Register error:', err);
             } finally {
                 registerBtn.classList.remove('loading');
                 registerBtn.disabled = false;
@@ -871,10 +903,15 @@
             if (btnEl) btnEl.textContent = isHidden ? '🔓' : '🔒';
         }
 
-        // Garantir estado inicial do botão (opcional)
+        // Garantir estado inicial dos botões (opcional)
         const __pwInput = document.getElementById('password');
         const __pwBtn = document.querySelector("button[onclick=\"togglePassword('password', this)\"]");
         if (__pwInput && __pwBtn) __pwBtn.textContent = '🔓';
+
+        const __cpwInput = document.getElementById('confirmPassword');
+        const __cpwBtn = document.querySelector("button[onclick=\"togglePassword('confirmPassword', this)\"]");
+        if (__cpwInput && __cpwBtn) __cpwBtn.textContent = '🔓';
+
 
 
         // Reenviar email de confirmação

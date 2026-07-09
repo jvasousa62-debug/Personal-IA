@@ -59,8 +59,12 @@
   }
 
   function planLabel(plan) {
-    const normalized = (plan || '').toString().toLowerCase();
-    return ({ pro: 'Pro', premium: 'Premium', enterprise: 'Enterprise' }[normalized]) || 'Pro';
+    return window.IronFitPlanConfig?.getPlanLabel?.(plan) || ({
+      basic: 'Plano Simples',
+      pro: 'Plano Pro',
+      premium: 'Plano Premium',
+      enterprise: 'Plano Enterprise'
+    }[(plan || 'basic').toString().toLowerCase()] || 'Plano Simples');
   }
 
   function studentStatus(student) {
@@ -131,7 +135,7 @@
 
     const { data: ownedAcademies, error: ownedError } = await state.client
       .from('academies')
-      .select('id,name,status,access_code,student_limit,validity_months,expires_at,owner_user_id')
+      .select('id,name,status,access_code,student_limit,validity_months,expires_at,owner_user_id,plan')
       .eq('owner_user_id', state.user.id)
       .order('created_at', { ascending: false })
       .limit(1);
@@ -141,7 +145,7 @@
     } else if (state.profile?.academy_id) {
       const { data: linkedAcademies, error: linkedError } = await state.client
         .from('academies')
-        .select('id,name,status,access_code,student_limit,validity_months,expires_at,owner_user_id')
+        .select('id,name,status,access_code,student_limit,validity_months,expires_at,owner_user_id,plan')
         .eq('id', state.profile.academy_id)
         .order('created_at', { ascending: false })
         .limit(1);
@@ -250,7 +254,7 @@
           </td>
           <td><span class="academy-status ${status}">${statusLabel(status)}</span></td>
           <td>${formatDate(student.last_seen_at)}</td>
-          <td>${planLabel(student.plan || 'pro')}</td>
+          <td>${planLabel(student.plan || state.academy.plan || 'basic')}</td>
           <td><button class="academy-danger-btn" type="button" data-action="remove-student">Remover</button></td>
         </tr>
       `;
@@ -303,7 +307,7 @@
 
   function renderPlan() {
     const subscription = state.subscription;
-    const plan = planLabel(subscription?.plan || 'pro');
+    const plan = planLabel(state.academy.plan || subscription?.plan || 'basic');
     const nextBilling = subscription?.next_billing_at || state.academy.expires_at;
     const used = state.students.length;
     const limit = Number(state.academy.student_limit || 0);
@@ -313,7 +317,8 @@
       ['Plano atual', plan],
       ['Limite', `${limit} alunos`],
       ['Usando', `${used} alunos`],
-      ['Proxima cobranca', formatDate(nextBilling)]
+      ['Pagamento', 'Direto com IRONFIT'],
+      ['Validade', formatDate(nextBilling)]
     ].map(([label, value]) => `
       <div class="academy-plan-row"><span>${label}</span><strong>${value}</strong></div>
     `).join('');
@@ -356,52 +361,12 @@
   }
 
   async function updatePlan(action) {
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-    const basePlan = state.subscription?.plan || 'pro';
-    const nextPlan = action === 'upgrade' ? (basePlan === 'enterprise' ? 'enterprise' : (basePlan === 'premium' ? 'enterprise' : 'premium')) : basePlan;
-
-    const patches = {
-      renew: { status: 'active', next_billing_at: nextMonth.toISOString() },
-      upgrade: { status: 'active', plan: nextPlan, next_billing_at: nextMonth.toISOString() },
-      cancel: { status: 'canceled', canceled_at: new Date().toISOString() }
+    const labels = {
+      renew: 'renovar',
+      upgrade: 'fazer upgrade do',
+      cancel: 'cancelar o'
     };
-
-    if (!state.subscription?.id) {
-      const { data, error } = await state.client.from('subscriptions').insert({
-        academy_id: state.academy.id,
-        user_id: state.user.id,
-        status: 'active',
-        plan: nextPlan,
-        monthly_amount: nextPlan === 'enterprise' ? 299 : nextPlan === 'premium' ? 149 : 79,
-        next_billing_at: nextMonth.toISOString(),
-        started_at: new Date().toISOString()
-      }).select('id').single();
-
-      if (error) {
-        showAlert(`Erro ao criar assinatura: ${error.message}`, 'error');
-        return;
-      }
-
-      state.subscription = { id: data.id, plan: nextPlan, status: 'active' };
-      showAlert('Assinatura criada para a academia.');
-      await refreshData();
-      return;
-    }
-
-    const { error } = await state.client
-      .from('subscriptions')
-      .update(patches[action])
-      .eq('id', state.subscription.id);
-
-    if (error) {
-      showAlert(`Erro ao atualizar plano: ${error.message}`, 'error');
-      return;
-    }
-
-    showAlert('Plano atualizado.');
-    await refreshData();
+    showAlert(`Para ${labels[action] || 'alterar o'} plano, fale com o administrador IRONFIT. O pagamento e a liberacao sao feitos manualmente.`);
   }
 
   async function copyCode() {

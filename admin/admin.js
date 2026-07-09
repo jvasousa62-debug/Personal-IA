@@ -69,14 +69,40 @@
     return labels[normalized] || 'Aluno';
   }
 
+  function normalizePlan(plan) {
+    return window.IronFitPlanConfig?.normalizePlan?.(plan) || ((plan || 'basic').toString().toLowerCase());
+  }
+
   function planLabel(plan) {
-    const normalized = (plan || '').toString().toLowerCase();
-    const labels = {
-      pro: 'Pro',
-      premium: 'Premium',
-      enterprise: 'Enterprise'
-    };
-    return labels[normalized] || 'Pro';
+    return window.IronFitPlanConfig?.getPlanLabel?.(plan) || ({
+      basic: 'Plano Simples',
+      pro: 'Plano Pro',
+      premium: 'Plano Premium',
+      enterprise: 'Plano Enterprise'
+    }[normalizePlan(plan)] || 'Plano Simples');
+  }
+
+  function planOptions(selectedPlan) {
+    const options = window.IronFitPlanConfig?.getPlanOptions?.() || [
+      { value: 'basic', label: 'Plano Simples' },
+      { value: 'pro', label: 'Plano Pro' },
+      { value: 'premium', label: 'Plano Premium' },
+      { value: 'enterprise', label: 'Plano Enterprise' }
+    ];
+    const selected = normalizePlan(selectedPlan);
+    return options
+      .map((plan) => `<option value="${plan.value}" ${plan.value === selected ? 'selected' : ''}>${plan.label}</option>`)
+      .join('');
+  }
+
+  function planMonthlyAmount(plan) {
+    const normalized = normalizePlan(plan);
+    const item = window.IronFitPlanConfig?.getPlanOptions?.()?.find((option) => option.value === normalized);
+    return item?.monthlyAmount || ({ basic: 49, pro: 99, premium: 199, enterprise: 499 }[normalized] || 49);
+  }
+
+  function planTokenLimit(plan) {
+    return window.IronFitPlanConfig?.getAITokenLimit?.(plan) || ({ basic: 5000, pro: 20000, premium: 75000, enterprise: 300000 }[normalizePlan(plan)] || 5000);
   }
 
   function academyById(id) {
@@ -139,7 +165,7 @@
         .order('created_at', { ascending: false }),
       state.client
         .from('academies')
-        .select('id,name,legal_name,email,phone,status,access_code,student_limit,validity_months,expires_at,created_at')
+        .select('id,name,legal_name,email,phone,status,access_code,student_limit,validity_months,expires_at,created_at,owner_user_id,plan')
         .order('created_at', { ascending: false }),
       state.client
         .from('subscriptions')
@@ -179,13 +205,13 @@
     const activeUsers = state.users.filter((u) => u.account_status === 'active').length;
     const blockedUsers = state.users.filter((u) => u.account_status === 'blocked').length;
     const activeAcademies = state.academies.filter((a) => a.status === 'active').length;
-    const activeSubs = state.subscriptions.filter((s) => s.status === 'active');
-    const monthly = activeSubs.reduce((sum, sub) => sum + Number(sub.monthly_amount || 0), 0);
+    const activeManualPlans = state.academies.filter((academy) => academy.status === 'active');
+    const monthly = activeManualPlans.reduce((sum, academy) => sum + planMonthlyAmount(academy.plan), 0);
 
     const metrics = [
       ['Usuarios ativos', activeUsers, `${blockedUsers} bloqueados`],
       ['Academias ativas', activeAcademies, `${state.academies.length} cadastradas`],
-      ['Assinaturas ativas', activeSubs.length, `${state.subscriptions.filter((s) => s.status === 'canceled').length} canceladas`],
+      ['Planos ativos', activeManualPlans.length, 'cobranca manual'],
       ['Receita mensal', money.format(monthly), `${money.format(monthly * 12)} ao ano`]
     ];
 
@@ -223,7 +249,7 @@
           </td>
           <td>
             <select class="admin-select" data-field="plan">
-              ${['pro', 'premium', 'enterprise'].map((plan) => `<option value="${plan}" ${plan === (user.plan || 'pro').toLowerCase() ? 'selected' : ''}>${planLabel(plan)}</option>`).join('')}
+              ${planOptions(user.plan)}
             </select>
           </td>
           <td>
@@ -263,6 +289,10 @@
             <div class="admin-academy-name">${academy.name}</div>
             <div class="admin-muted">Criada em ${formatDate(academy.created_at)}</div>
           </td>
+          <td>
+            <strong>${planLabel(academy.plan)}</strong>
+            <div class="admin-muted">${money.format(planMonthlyAmount(academy.plan))}/mes</div>
+          </td>
           <td><strong>${academy.access_code}</strong></td>
           <td>${students} / ${academy.student_limit}</td>
           <td>${academy.validity_months} meses<br><span class="admin-muted">${formatDate(academy.expires_at)}</span></td>
@@ -276,28 +306,27 @@
           </td>
         </tr>
       `;
-    }).join('') || `<tr><td colspan="6">Nenhuma academia cadastrada.</td></tr>`;
+    }).join('') || `<tr><td colspan="7">Nenhuma academia cadastrada.</td></tr>`;
   }
 
   function renderBilling() {
-    $('#subscriptionsTableBody').innerHTML = state.subscriptions.map((sub) => {
-      const academy = academyById(sub.academy_id);
+    $('#subscriptionsTableBody').innerHTML = state.academies.map((academy) => {
       return `
         <tr>
           <td>${academy?.name || 'Sem academia'}</td>
-          <td>${planLabel(sub.plan)}</td>
-          <td><span class="admin-status ${sub.status}">${statusLabel(sub.status)}</span></td>
-          <td>${money.format(Number(sub.monthly_amount || 0))}</td>
+          <td>${planLabel(academy.plan)}</td>
+          <td><span class="admin-status ${academy.status}">${statusLabel(academy.status)}</span></td>
+          <td>${money.format(planMonthlyAmount(academy.plan))}</td>
         </tr>
       `;
-    }).join('') || `<tr><td colspan="4">Nenhuma assinatura cadastrada.</td></tr>`;
+    }).join('') || `<tr><td colspan="4">Nenhuma academia cadastrada.</td></tr>`;
 
-    const active = state.subscriptions.filter((sub) => sub.status === 'active');
-    const canceled = state.subscriptions.filter((sub) => sub.status === 'canceled');
-    const monthly = active.reduce((sum, sub) => sum + Number(sub.monthly_amount || 0), 0);
+    const active = state.academies.filter((academy) => academy.status === 'active');
+    const inactive = state.academies.filter((academy) => academy.status !== 'active');
+    const monthly = active.reduce((sum, academy) => sum + planMonthlyAmount(academy.plan), 0);
     const values = [
-      ['Assinaturas ativas', active.length],
-      ['Assinaturas canceladas', canceled.length],
+      ['Planos ativos', active.length],
+      ['Academias inativas', inactive.length],
       ['Receita mensal', money.format(monthly)],
       ['Receita anual', money.format(monthly * 12)]
     ];
@@ -349,6 +378,10 @@
 
   async function updateUser(row, patch) {
     const userId = row.dataset.userId;
+    if (patch.plan) {
+      patch.plan = normalizePlan(patch.plan);
+      patch.ai_monthly_tokens_limit = planTokenLimit(patch.plan);
+    }
     const { error } = await state.client
       .from('user_profiles')
       .update({ ...patch, updated_at: new Date().toISOString() })
@@ -378,9 +411,11 @@
     const id = $('#academyId').value;
     const expires = $('#academyExpires').value;
     const ownerUserId = $('#academyOwnerUserId').value || null;
+    const plan = normalizePlan($('#academyPlan').value);
     const payload = {
       name: $('#academyName').value.trim(),
       access_code: $('#academyCode').value.trim().toUpperCase(),
+      plan,
       student_limit: Number($('#academyLimit').value || 0),
       validity_months: Number($('#academyMonths').value || 12),
       expires_at: expires ? new Date(`${expires}T23:59:59`).toISOString() : null,
@@ -402,13 +437,63 @@
     const academyId = data?.id || id;
 
     if (ownerUserId && academyId) {
+      const ownerProfile = state.users.find((user) => user.user_id === ownerUserId);
+      const ownerRole = ownerProfile?.role === 'admin' ? 'admin' : 'academy_owner';
       const { error: ownerError } = await state.client
         .from('user_profiles')
-        .update({ role: 'academy_owner', academy_id: academyId, updated_at: new Date().toISOString() })
+        .update({
+          role: ownerRole,
+          academy_id: academyId,
+          plan,
+          ai_monthly_tokens_limit: planTokenLimit(plan),
+          updated_at: new Date().toISOString()
+        })
         .eq('user_id', ownerUserId);
 
       if (ownerError) {
         showAlert(`Academia salva, mas houve erro ao vincular o dono: ${ownerError.message}`, 'warning');
+      }
+    }
+
+    if (academyId) {
+      const { error: studentsPlanError } = await state.client
+        .from('user_profiles')
+        .update({
+          plan,
+          ai_monthly_tokens_limit: planTokenLimit(plan),
+          updated_at: new Date().toISOString()
+        })
+        .eq('academy_id', academyId)
+        .neq('account_status', 'deleted');
+
+      if (studentsPlanError) {
+        showAlert(`Academia salva, mas houve erro ao atualizar o plano dos alunos: ${studentsPlanError.message}`, 'warning');
+      }
+
+      const subscriptionPayload = {
+        academy_id: academyId,
+        user_id: ownerUserId,
+        status: payload.status === 'active' ? 'active' : 'canceled',
+        plan,
+        monthly_amount: planMonthlyAmount(plan),
+        started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: existingSubscriptions } = await state.client
+        .from('subscriptions')
+        .select('id')
+        .eq('academy_id', academyId)
+        .limit(1);
+
+      const existingSubscriptionId = existingSubscriptions?.[0]?.id;
+      const subscriptionRequest = existingSubscriptionId
+        ? state.client.from('subscriptions').update(subscriptionPayload).eq('id', existingSubscriptionId)
+        : state.client.from('subscriptions').insert(subscriptionPayload);
+
+      const { error: subscriptionError } = await subscriptionRequest;
+      if (subscriptionError) {
+        showAlert(`Academia salva, mas houve erro ao registrar faturamento manual: ${subscriptionError.message}`, 'warning');
       }
     }
 
@@ -435,6 +520,7 @@
     $('#academyId').value = academy?.id || '';
     $('#academyName').value = academy?.name || '';
     $('#academyCode').value = academy?.access_code || '';
+    $('#academyPlan').value = normalizePlan(academy?.plan || 'basic');
     $('#academyLimit').value = academy?.student_limit || 300;
     $('#academyMonths').value = academy?.validity_months || 12;
     $('#academyExpires').value = academy?.expires_at ? academy.expires_at.slice(0, 10) : '';
