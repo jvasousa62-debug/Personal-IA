@@ -112,10 +112,18 @@
     const isAdmin = role === 'admin';
     const isAcademyOwner = role === 'academy_owner';
     
+    // ✅ CORREÇÃO: Agora verifica corretamente se é admin OU academy_owner com status ativo
     const canAccessAcademy = (isAdmin || isAcademyOwner) && accountStatus === 'active';
 
     if (!canAccessAcademy) {
-      denyAccess('Sua conta nao esta ativa ou nao tem permissao para gerir uma academia.');
+      // Mensagens de erro mais específicas
+      if (!isAdmin && !isAcademyOwner) {
+        denyAccess('Esta area e exclusiva para donos de academia ou administradores.');
+      } else if (accountStatus !== 'active') {
+        denyAccess('Sua conta nao esta ativa. Entre em contato com o administrador IRONFIT.');
+      } else {
+        denyAccess('Sua conta nao tem permissao para gerir uma academia.');
+      }
       return;
     }
 
