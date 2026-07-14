@@ -295,6 +295,8 @@
         .from('user_profiles')
         .select('user_id,email,full_name,account_status,plan,last_seen_at,created_at')
         .eq('academy_id', state.academy.id)
+        .neq('role', 'academy_owner')
+        .neq('role', 'admin')
         .order('full_name', { ascending: true }),
       state.client
         .from('subscriptions')
