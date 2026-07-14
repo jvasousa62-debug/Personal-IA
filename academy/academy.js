@@ -16,7 +16,13 @@
     const config = window.IronFitConfig?.SUPABASE_CONFIG;
     const url = config?.url || document.querySelector('meta[name="supabase-url"]')?.content;
     const key = config?.key || document.querySelector('meta[name="supabase-key"]')?.content;
-    if (!url || !key || !window.supabase) return null;
+    
+    console.log('🔍 [DEBUG] Inicializando Supabase com URL:', url ? 'OK' : 'FALTA');
+    
+    if (!url || !key || !window.supabase) {
+      console.error('❌ [DEBUG] Supabase não configurado corretamente');
+      return null;
+    }
     return window.supabase.createClient(url, key);
   }
 
@@ -83,22 +89,76 @@
     }[status] || status || '-';
   }
 
+  // ✅ FIX: Aguardar e validar sessão do Supabase antes de usar
+  async function ensureSessionValid() {
+    console.log('🔍 [DEBUG] Verificando sessão do Supabase...');
+    
+    if (!state.client) {
+      console.error('❌ [DEBUG] Client não inicializado');
+      return false;
+    }
+
+    try {
+      // Tentar obter sessão atual
+      const { data, error } = await state.client.auth.getSession();
+      
+      console.log('🔍 [DEBUG] getSession result:', {
+        hasSession: !!data?.session,
+        user: data?.session?.user?.email,
+        error: error?.message
+      });
+
+      if (error) {
+        console.error('❌ [DEBUG] Erro ao obter sessão:', error.message);
+        return false;
+      }
+
+      if (!data?.session) {
+        console.warn('⚠️ [DEBUG] Nenhuma sessão ativa encontrada');
+        return false;
+      }
+
+      console.log('✅ [DEBUG] Sessão válida');
+      return true;
+    } catch (err) {
+      console.error('❌ [DEBUG] Erro ao verificar sessão:', err.message);
+      return false;
+    }
+  }
+
   async function loadAcademy() {
     console.log('🔍 [DEBUG] Iniciando loadAcademy...');
     setLoading(true);
     $('#academyDenied')?.classList.add('hidden');
 
     state.client = initSupabaseClient();
-    console.log('🔍 [DEBUG] Supabase client:', state.client ? 'OK' : 'ERRO');
+    
     if (!state.client) {
       denyAccess('Supabase nao esta configurado nesta pagina.');
       return;
     }
 
+    // ✅ FIX: Verificar se a sessão está válida ANTES de chamar getUser
+    const sessionValid = await ensureSessionValid();
+    if (!sessionValid) {
+      console.error('❌ [DEBUG] Sessão inválida. Tentando forçar atualização...');
+      denyAccess('Sessao expirada. Faça login novamente.');
+      // Redirecionar após 2 segundos
+      setTimeout(() => {
+        window.location.href = '../login.html';
+      }, 2000);
+      return;
+    }
+
+    // ✅ Agora sim, tentar obter o usuário
     const { data: userData, error: userError } = await state.client.auth.getUser();
-    console.log('🔍 [DEBUG] getUser result:', { user: userData?.user?.email, error: userError?.message });
+    console.log('🔍 [DEBUG] getUser result:', { 
+      user: userData?.user?.email, 
+      error: userError?.message 
+    });
     
     if (userError || !userData?.user) {
+      console.error('❌ [DEBUG] Erro ao obter usuário:', userError?.message);
       denyAccess('Faca login antes de abrir a area da academia.');
       return;
     }
@@ -163,6 +223,14 @@
 
   async function refreshData() {
     console.log('🔍 [DEBUG] Iniciando refreshData...');
+    
+    // ✅ FIX: Validar que state.user existe antes de continuar
+    if (!state.user || !state.user.id) {
+      console.error('❌ [DEBUG] state.user não está definido');
+      denyAccess('Erro: usuario nao autenticado');
+      return;
+    }
+    
     setLoading(true);
 
     let academies = [];
