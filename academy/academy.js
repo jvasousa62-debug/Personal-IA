@@ -35,6 +35,7 @@
   }
 
   function denyAccess(message) {
+    console.error('❌ ACESSO NEGADO:', message);
     setLoading(false);
     $('#academyContent')?.classList.add('hidden');
     const denied = $('#academyDenied');
@@ -83,22 +84,27 @@
   }
 
   async function loadAcademy() {
+    console.log('🔍 [DEBUG] Iniciando loadAcademy...');
     setLoading(true);
     $('#academyDenied')?.classList.add('hidden');
 
     state.client = initSupabaseClient();
+    console.log('🔍 [DEBUG] Supabase client:', state.client ? 'OK' : 'ERRO');
     if (!state.client) {
       denyAccess('Supabase nao esta configurado nesta pagina.');
       return;
     }
 
     const { data: userData, error: userError } = await state.client.auth.getUser();
+    console.log('🔍 [DEBUG] getUser result:', { user: userData?.user?.email, error: userError?.message });
+    
     if (userError || !userData?.user) {
       denyAccess('Faca login antes de abrir a area da academia.');
       return;
     }
 
     state.user = userData.user;
+    console.log('✅ [DEBUG] User autenticado:', state.user.email);
 
     const { data: profile, error: profileError } = await state.client
       .from('user_profiles')
@@ -106,26 +112,43 @@
       .eq('user_id', state.user.id)
       .maybeSingle();
 
+    console.log('🔍 [DEBUG] Profile carregado:', {
+      email: profile?.email,
+      role: profile?.role,
+      account_status: profile?.account_status,
+      academy_id: profile?.academy_id,
+      error: profileError?.message
+    });
+
     const storedRole = (localStorage.getItem('ironfit_userRole') || '').toLowerCase();
     const role = (profile?.role || storedRole || '').toLowerCase();
     const accountStatus = profile?.account_status || 'active';
     const isAdmin = role === 'admin';
     const isAcademyOwner = role === 'academy_owner';
     
-    // ✅ CORREÇÃO: Agora verifica corretamente se é admin OU academy_owner com status ativo
+    console.log('🔍 [DEBUG] Verificação de acesso:', {
+      storedRole,
+      role,
+      accountStatus,
+      isAdmin,
+      isAcademyOwner,
+      canAccess: (isAdmin || isAcademyOwner) && accountStatus === 'active'
+    });
+    
     const canAccessAcademy = (isAdmin || isAcademyOwner) && accountStatus === 'active';
 
     if (!canAccessAcademy) {
-      // Mensagens de erro mais específicas
       if (!isAdmin && !isAcademyOwner) {
-        denyAccess('Esta area e exclusiva para donos de academia ou administradores.');
+        denyAccess(`Esta area e exclusiva para donos de academia. Seu role: "${role}"`);
       } else if (accountStatus !== 'active') {
-        denyAccess('Sua conta nao esta ativa. Entre em contato com o administrador IRONFIT.');
+        denyAccess(`Sua conta esta com status: "${accountStatus}". Deve ser "active".`);
       } else {
         denyAccess('Sua conta nao tem permissao para gerir uma academia.');
       }
       return;
     }
+
+    console.log('✅ [DEBUG] Acesso concedido! Carregando dados...');
 
     state.profile = profile || {
       user_id: state.user.id,
@@ -139,6 +162,7 @@
   }
 
   async function refreshData() {
+    console.log('🔍 [DEBUG] Iniciando refreshData...');
     setLoading(true);
 
     let academies = [];
@@ -151,9 +175,13 @@
       .order('created_at', { ascending: false })
       .limit(1);
 
+    console.log('🔍 [DEBUG] Academias do owner:', { count: ownedAcademies?.length, error: ownedError?.message });
+
     if (!ownedError && ownedAcademies?.length) {
       academies = ownedAcademies;
+      console.log('✅ [DEBUG] Academia encontrada por owner_user_id');
     } else if (state.profile?.academy_id) {
+      console.log('🔍 [DEBUG] Procurando por academy_id:', state.profile.academy_id);
       const { data: linkedAcademies, error: linkedError } = await state.client
         .from('academies')
         .select('id,name,status,access_code,student_limit,validity_months,expires_at,owner_user_id,plan')
@@ -161,10 +189,13 @@
         .order('created_at', { ascending: false })
         .limit(1);
 
+      console.log('🔍 [DEBUG] Resultado da busca:', { count: linkedAcademies?.length, error: linkedError?.message });
+
       academies = linkedAcademies || [];
       academyError = linkedError;
 
       if (academies?.[0] && !academies[0].owner_user_id) {
+        console.log('🔍 [DEBUG] Atualizando owner_user_id da academia...');
         const { error: linkError } = await state.client
           .from('academies')
           .update({ owner_user_id: state.user.id, updated_at: new Date().toISOString() })
@@ -172,18 +203,24 @@
 
         if (!linkError) {
           academies[0].owner_user_id = state.user.id;
+          console.log('✅ [DEBUG] owner_user_id atualizado com sucesso');
+        } else {
+          console.error('❌ [DEBUG] Erro ao atualizar owner_user_id:', linkError.message);
         }
       }
     } else {
+      console.log('⚠️ [DEBUG] Nenhuma academia encontrada');
       academyError = ownedError;
     }
 
     if (academyError || !academies?.length) {
+      console.error('❌ [DEBUG] Erro ao carregar academia:', { error: academyError?.message, count: academies?.length });
       renderEmptyState();
       return;
     }
 
     state.academy = academies[0];
+    console.log('✅ [DEBUG] Academia selecionada:', state.academy.name);
 
     const [studentsResult, subscriptionResult, eventsResult] = await Promise.all([
       state.client
@@ -205,6 +242,13 @@
         .limit(1000)
     ]);
 
+    console.log('🔍 [DEBUG] Dados carregados:', {
+      students: studentsResult.data?.length,
+      subscription: subscriptionResult.data?.length,
+      events: eventsResult.data?.length,
+      errors: [studentsResult.error?.message, subscriptionResult.error?.message, eventsResult.error?.message]
+    });
+
     const firstError = studentsResult.error || subscriptionResult.error;
     if (firstError) {
       denyAccess(`Nao foi possivel carregar os dados: ${firstError.message}`);
@@ -215,8 +259,10 @@
     state.subscription = subscriptionResult.data?.[0] || null;
     state.events = eventsResult.error ? [] : (eventsResult.data || []);
 
+    console.log('✅ [DEBUG] Dados processados com sucesso. Renderizando...');
     renderAll();
     setLoading(false);
+    console.log('✅ [DEBUG] loadAcademy concluído com sucesso!');
   }
 
   function renderEmptyState() {
@@ -417,6 +463,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    console.log('🔍 [DEBUG] DOMContentLoaded - iniciando academy.js');
     bindEvents();
     loadAcademy();
   });
